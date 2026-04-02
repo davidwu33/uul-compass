@@ -8,49 +8,60 @@ import { Compass } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const dayNumber = 2;
+  const totalDays = 100;
+  const pct = Math.round((dayNumber / totalDays) * 100);
 
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-sidebar text-sidebar-foreground">
+    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border/30">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 h-16 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-sidebar-primary">
-          <Compass className="h-4.5 w-4.5 text-sidebar-primary-foreground" />
+      <div className="flex items-center gap-3 px-6 h-16 border-b border-sidebar-border/50">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/70 shadow-sm shadow-sidebar-primary/20">
+          <Compass className="h-4 w-4 text-sidebar-primary-foreground" />
         </div>
         <div>
-          <span className="font-semibold text-base tracking-tight">Compass</span>
-          <p className="text-[10px] text-sidebar-foreground/50 leading-tight">UUL Global</p>
+          <span className="font-semibold text-sm tracking-tight">Compass</span>
+          <p className="text-[10px] text-sidebar-foreground/40 leading-tight">UUL Global</p>
         </div>
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
-          Main
-        </p>
-        {navItems.slice(0, 2).map((item) => renderNavItem(item, pathname))}
+      <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
+        <NavSection label="Main">
+          {navItems.slice(0, 2).map((item) => (
+            <NavItem key={item.href} item={item} pathname={pathname} />
+          ))}
+        </NavSection>
 
-        <div className="pt-4 pb-1">
-          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
-            Operations
-          </p>
-        </div>
-        {navItems.slice(2, 7).map((item) => renderNavItem(item, pathname))}
+        <NavSection label="Operations">
+          {navItems.slice(2, 7).map((item) => (
+            <NavItem key={item.href} item={item} pathname={pathname} />
+          ))}
+        </NavSection>
 
-        <div className="pt-4 pb-1">
-          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
-            System
-          </p>
-        </div>
-        {navItems.slice(7).map((item) => renderNavItem(item, pathname))}
+        <NavSection label="System">
+          {navItems.slice(7).map((item) => (
+            <NavItem key={item.href} item={item} pathname={pathname} />
+          ))}
+        </NavSection>
       </nav>
 
-      {/* Footer */}
-      <div className="px-6 py-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-sidebar-foreground/60">Day 1 of 100</span>
+      {/* Footer — day counter with mini progress */}
+      <div className="px-5 py-4 border-t border-sidebar-border/50">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-medium text-sidebar-foreground/70">Day {dayNumber} of {totalDays}</span>
+          </div>
+          <span className="text-[10px] tabular-nums text-sidebar-foreground/40">{pct}%</span>
         </div>
-        <p className="text-[10px] text-sidebar-foreground/40 mt-1">
+        <div className="h-1 rounded-full bg-sidebar-accent overflow-hidden">
+          <div
+            className="h-full rounded-full bg-sidebar-primary transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className="text-[10px] text-sidebar-foreground/30 mt-2">
           Apr 1 — Jul 10, 2026
         </p>
       </div>
@@ -58,31 +69,45 @@ export function Sidebar() {
   );
 }
 
-function renderNavItem(
-  item: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; phase?: number },
-  pathname: string
-) {
-  const isActive =
-    item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="pt-4 first:pt-0">
+      <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/30">
+        {label}
+      </p>
+      <div className="space-y-0.5">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function NavItem({
+  item,
+  pathname,
+}: {
+  item: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; phase?: number };
+  pathname: string;
+}) {
+  const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
   const Icon = item.icon;
   const isDisabled = item.phase && item.phase > 1;
 
   return (
     <Link
-      key={item.href}
       href={isDisabled ? "#" : item.href}
       className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150",
         isActive
           ? "bg-sidebar-accent text-sidebar-primary font-medium"
-          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
-        isDisabled && "opacity-30 pointer-events-none"
+          : "text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/90",
+        isDisabled && "opacity-20 pointer-events-none"
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="flex-1">{item.label}</span>
       {isDisabled && (
-        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-sidebar-foreground/10">
+        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-sidebar-foreground/8 text-sidebar-foreground/30">
           P{item.phase}
         </span>
       )}
