@@ -11,6 +11,16 @@ import {
 import { phaseStatusEnum, gateStatusEnum } from "./enums";
 import { users } from "./org";
 
+// ─── PMI Config (singleton row) ────────────────────────────────
+// Stores project-level settings. Always query with id = 'default'.
+export const pmiConfig = pgTable("pmi_config", {
+  id: varchar({ length: 20 }).primaryKey().default("default"),
+  startDate: date("start_date").notNull(),   // e.g. 2026-04-01 — used to calculate dayNumber
+  totalDays: integer("total_days").default(100).notNull(),
+  projectName: varchar("project_name", { length: 255 }).default("UUL Post-Merger Integration"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ─── PMI Phases ────────────────────────────────────────────────
 export const pmiPhases = pgTable("pmi_phases", {
   id: uuid().defaultRandom().primaryKey(),

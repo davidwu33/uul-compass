@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { cn, formatDueDate, isOverdue } from "@/lib/utils";
 import { Calendar, AlertCircle } from "lucide-react";
 
 // Re-export TaskData from the data layer for backward compat
@@ -17,10 +17,8 @@ const priorityConfig = {
 };
 
 export function TaskCard({ task }: { task: TaskData }) {
-  const isOverdue =
-    task.dueDate &&
-    task.status !== "done" &&
-    new Date(task.dueDate + ", 2026") < new Date();
+  const taskIsOverdue = task.status !== "done" && isOverdue(task.dueDate);
+  const displayDate = formatDueDate(task.dueDate);
   const p = priorityConfig[task.priority];
   const isCritical = task.priority === "critical";
 
@@ -30,7 +28,7 @@ export function TaskCard({ task }: { task: TaskData }) {
       isCritical
         ? "border-red-200/60 shadow-sm shadow-red-500/5 hover:shadow-md hover:shadow-red-500/10 hover:-translate-y-0.5"
         : "border-border/60 shadow-sm hover:shadow-md hover:-translate-y-0.5",
-      isOverdue && "border-red-300/60"
+      taskIsOverdue && "border-red-300/60"
     )}>
       {/* Workstream tag */}
       <div className="flex items-center justify-between mb-2.5">
@@ -43,7 +41,7 @@ export function TaskCard({ task }: { task: TaskData }) {
             {task.workstream}
           </span>
         </div>
-        {isOverdue && (
+        {taskIsOverdue && (
           <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
         )}
       </div>
@@ -64,15 +62,15 @@ export function TaskCard({ task }: { task: TaskData }) {
             <span className={cn("w-1.5 h-1.5 rounded-full mr-1 shrink-0", p.dot)} />
             {p.label}
           </Badge>
-          {task.dueDate && (
+          {displayDate && (
             <span
               className={cn(
                 "flex items-center gap-1 text-[10px] shrink-0",
-                isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"
+                taskIsOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"
               )}
             >
               <Calendar className="h-2.5 w-2.5" />
-              {task.dueDate}
+              {displayDate}
             </span>
           )}
         </div>

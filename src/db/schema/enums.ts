@@ -267,6 +267,7 @@ export const taskStatusEnum = pgEnum("task_status", [
   "todo",
   "in_progress",
   "blocked",
+  "review",
   "done",
 ]);
 
@@ -298,6 +299,13 @@ export const gateStatusEnum = pgEnum("gate_status", [
   "passed",
   "failed",
   "deferred",
+]);
+
+// ─── Access Control ────────────────────────────────────────────
+export const accessLevelEnum = pgEnum("access_level", [
+  "full",
+  "read",
+  "restricted",
 ]);
 
 // ─── Value Gains ───────────────────────────────────────────────

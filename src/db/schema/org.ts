@@ -6,8 +6,10 @@ import {
   boolean,
   timestamp,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
-import { userRoleEnum, contactTypeEnum } from "./enums";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { userRoleEnum, contactTypeEnum, accessLevelEnum } from "./enums";
 
 // ─── Entities (Sister Companies) ────────────────────────────────
 export const entities = pgTable("entities", {
@@ -45,7 +47,8 @@ export const departments = pgTable("departments", {
   name: varchar({ length: 100 }).notNull(),
   code: varchar({ length: 20 }).notNull(),
   color: varchar({ length: 20 }),
-  headId: uuid("head_id"), // FK to users, set after users table exists
+  // Lazy ref to break the departments <-> users circular dependency
+  headId: uuid("head_id").references((): AnyPgColumn => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -61,7 +64,7 @@ export const users = pgTable("users", {
   title: varchar({ length: 255 }),
   phone: varchar({ length: 50 }),
   role: userRoleEnum().default("viewer").notNull(),
-  reportsTo: uuid("reports_to"),
+  reportsTo: uuid("reports_to").references((): AnyPgColumn => users.id),
   isActive: boolean("is_active").default(true).notNull(),
   avatarUrl: text("avatar_url"),
   metadata: jsonb(), // WeChat, TG user ID, preferences
@@ -97,5 +100,7 @@ export const userEntityAccess = pgTable("user_entity_access", {
   id: uuid().defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id).notNull(),
   entityId: uuid("entity_id").references(() => entities.id).notNull(),
-  accessLevel: varchar("access_level", { length: 20 }).default("full").notNull(),
-});
+  accessLevel: accessLevelEnum("access_level").default("full").notNull(),
+}, (t) => [
+  unique().on(t.userId, t.entityId),
+]);

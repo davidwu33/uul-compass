@@ -24,7 +24,7 @@ export interface TaskData {
   taskCode: string; // e.g., "F1", "O12", "T9" — matches plan doc
   title: string;
   description?: string;
-  status: "todo" | "in_progress" | "blocked" | "done";
+  status: "todo" | "in_progress" | "blocked" | "review" | "done";
   priority: "critical" | "high" | "medium" | "low";
   assignee?: { name: string; initials: string; office?: string };
   dueDate?: string;

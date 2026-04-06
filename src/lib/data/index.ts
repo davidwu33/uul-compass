@@ -26,6 +26,7 @@ import { demoRisks } from "./demo/risks";
 import { demoValueInitiatives, demoValueSnapshots } from "./demo/value-gains";
 import { demoScorecard, demoPillarScorecard, demoAllMetrics, demoFinancialPulse } from "./demo/metrics";
 import { compassConfig } from "./config";
+import { isOverdue, calcDayNumber } from "@/lib/utils";
 
 // ─── Getters ───────────────────────────────────────────────────
 
@@ -160,40 +161,32 @@ export function getUpcomingMilestones(limit = 5) {
 
 export function getCurrentDay(): number {
   const { goLiveDate, totalDays } = compassConfig;
-  if (!goLiveDate) return 1;
-  const start = new Date(goLiveDate);
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  return Math.max(1, Math.min(totalDays, diff + 1));
+  return calcDayNumber(goLiveDate ?? "2026-04-01", totalDays);
 }
 
-// Convert "Apr 7" style date to day number (1-100) relative to Apr 1 start
+// Convert a date string ("Apr 7" or "2026-04-07") to a day number (1-100)
+// relative to the configured project start date.
 function dateToDayNumber(dateStr: string): number {
-  const months: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6,
-    Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  };
-  const parts = dateStr.split(" ");
-  if (parts.length !== 2) return 999;
-  const month = months[parts[0]];
-  const day = parseInt(parts[1]);
-  if (month === undefined || isNaN(day)) return 999;
-  const target = new Date(2026, month, day);
-  const start = new Date(2026, 3, 1); // Apr 1
-  return Math.floor((target.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-}
+  const startIso = compassConfig.goLiveDate ?? "2026-04-01";
+  const [sy, sm, sd] = startIso.split("-").map(Number);
+  const projectStart = new Date(sy, sm - 1, sd);
 
-// Simple overdue check against "Apr 7" style dates
-function isOverdue(dateStr: string): boolean {
+  // Handle ISO format
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const target = new Date(y, m - 1, d);
+    return Math.floor((target.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  }
+
+  // Handle short display format: "Apr 7"
   const months: Record<string, number> = {
     Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6,
     Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
   };
   const parts = dateStr.split(" ");
-  if (parts.length !== 2) return false;
-  const month = months[parts[0]];
+  if (parts.length !== 2 || months[parts[0]] === undefined) return 999;
   const day = parseInt(parts[1]);
-  if (month === undefined || isNaN(day)) return false;
-  const dueDate = new Date(2026, month, day);
-  return new Date() > dueDate;
+  if (isNaN(day)) return 999;
+  const target = new Date(projectStart.getFullYear(), months[parts[0]], day);
+  return Math.floor((target.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 }

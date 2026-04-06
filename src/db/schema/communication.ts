@@ -7,7 +7,9 @@ import {
   date,
   timestamp,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { actionItemStatusEnum } from "./enums";
 import { entities, users } from "./org";
 
@@ -36,7 +38,7 @@ export const comments = pgTable("comments", {
   targetId: uuid("target_id").notNull(),
   body: text().notNull(),
   isInternal: boolean("is_internal").default(true),
-  parentId: uuid("parent_id"), // thread replies
+  parentId: uuid("parent_id").references((): AnyPgColumn => comments.id), // thread replies
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -48,7 +50,7 @@ export const meetingNotes = pgTable("meeting_notes", {
   title: varchar({ length: 255 }).notNull(),
   meetingDate: date("meeting_date").notNull(),
   meetingType: varchar("meeting_type", { length: 50 }), // board, leadership, department, strategy
-  attendeeIds: uuid("attendee_ids").array(),
+  // attendees are stored in the meeting_attendees junction table
   body: text(),
   decisions: jsonb(), // Array of decision strings
   brainNotePath: text("brain_note_path"),
@@ -56,6 +58,15 @@ export const meetingNotes = pgTable("meeting_notes", {
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ─── Meeting Attendees (junction) ──────────────────────────────
+export const meetingAttendees = pgTable("meeting_attendees", {
+  id: uuid().defaultRandom().primaryKey(),
+  meetingId: uuid("meeting_id").references(() => meetingNotes.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+}, (t) => [
+  unique().on(t.meetingId, t.userId),
+]);
 
 // ─── Action Items ───────────────────────────────────────────────
 export const actionItems = pgTable("action_items", {
