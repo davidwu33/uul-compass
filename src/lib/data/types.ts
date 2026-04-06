@@ -7,6 +7,16 @@ export interface WorkstreamData {
   color: string;
   taskCount: number;
   completed: number;
+  targetCompletion: number; // expected % complete by current day
+}
+
+export interface FinancialPulseMetric {
+  id: string;
+  label: string;
+  value: string;
+  subLabel: string;
+  trend?: "up" | "down" | "flat";
+  status: "green" | "amber" | "red" | "gray";
 }
 
 export interface TaskData {
@@ -14,7 +24,7 @@ export interface TaskData {
   taskCode: string; // e.g., "F1", "O12", "T9" — matches plan doc
   title: string;
   description?: string;
-  status: "todo" | "in_progress" | "blocked" | "review" | "done";
+  status: "todo" | "in_progress" | "blocked" | "done";
   priority: "critical" | "high" | "medium" | "low";
   assignee?: { name: string; initials: string; office?: string };
   dueDate?: string;
@@ -102,6 +112,23 @@ export interface MetricData {
   status: "green" | "amber" | "red" | "gray";
   trend?: "up" | "down" | "flat";
   category: "financial" | "operations" | "technology" | "people";
+}
+
+export interface PillarSubItem {
+  label: string;
+  value: string;
+  status: "green" | "amber" | "red" | "gray";
+}
+
+export interface PillarMetric {
+  id: string;
+  pillar: string;
+  name: string;
+  icon: string;
+  overallStatus: "green" | "amber" | "red" | "gray";
+  headline: string;
+  headlineLabel: string;
+  subItems: PillarSubItem[];
 }
 
 export interface ActivityItem {

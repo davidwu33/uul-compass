@@ -4,9 +4,9 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const tabs = [
-  { label: "Command Center", href: "/" },
-  { label: "Directives", href: "/plan" },
-  { label: "Intelligence", href: "/value-gains" },
+  { label: "Overview", href: "/" },
+  { label: "Plan", href: "/plan" },
+  { label: "Growth", href: "/value-gains" },
 ];
 
 export function TopNav() {
@@ -15,7 +15,7 @@ export function TopNav() {
   return (
     <nav className="fixed top-0 w-full z-50 bg-slate-950 backdrop-blur-xl border-b border-slate-800/50 flex justify-between items-center px-6 h-16">
       <div className="flex items-center gap-8">
-        <span className="font-serif text-blue-200 tracking-widest text-xl">Global Attaché</span>
+        <span className="font-serif text-blue-200 tracking-widest text-xl">Compass</span>
         <div className="hidden md:flex gap-6 text-sm font-serif text-blue-200 tracking-tight">
           {tabs.map((tab) => {
             const isActive = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);

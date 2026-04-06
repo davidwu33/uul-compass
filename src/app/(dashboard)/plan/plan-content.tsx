@@ -9,15 +9,6 @@ import type {
   MilestoneData,
 } from "@/lib/data";
 
-// ─── Status column config ────────────────────────────────────────
-const STATUS_COLUMNS = [
-  { key: "todo" as const, label: "Pending Initiation", color: "#64748b", borderColor: "border-slate-500" },
-  { key: "in_progress" as const, label: "Active Deployment", color: "#3b82f6", borderColor: "border-blue-500" },
-  { key: "blocked" as const, label: "Impediments", color: "#ef4444", borderColor: "border-red-500" },
-  { key: "review" as const, label: "Quality Assurance", color: "#dfc299", borderColor: "border-[#dfc299]" },
-  { key: "done" as const, label: "Executed", color: "#22c55e", borderColor: "border-green-500" },
-];
-
 // ─── Props ───────────────────────────────────────────────────────
 interface PlanContentProps {
   tasks: TaskData[];
@@ -31,6 +22,27 @@ interface PlanContentProps {
   directivesPct: number;
 }
 
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  blocked: { label: "Blocked", color: "text-red-400", icon: "block" },
+  in_progress: { label: "In Progress", color: "text-[#b4c5ff]", icon: "play_circle" },
+  todo: { label: "To Do", color: "text-slate-500", icon: "circle" },
+  done: { label: "Done", color: "text-emerald-400", icon: "check_circle" },
+};
+
+const PRIORITY_ORDER: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+const PRIORITY_CONFIG: Record<string, { label: string; text: string; border: string; opacity: string }> = {
+  critical: { label: "Critical", text: "text-red-400", border: "border-red-400", opacity: "" },
+  high: { label: "High", text: "text-amber-400", border: "border-amber-400", opacity: "" },
+  medium: { label: "Medium", text: "text-slate-400", border: "border-slate-600", opacity: "" },
+  low: { label: "Low", text: "text-slate-500", border: "border-slate-700", opacity: "opacity-70" },
+};
+
 export function PlanContent({
   tasks,
   workstreams,
@@ -41,485 +53,291 @@ export function PlanContent({
   doneTasks,
   directivesPct,
 }: PlanContentProps) {
+  const [activePhaseNum, setActivePhaseNum] = useState<1 | 2 | 3>(1);
   const [activeWorkstream, setActiveWorkstream] = useState<string | null>(null);
-  const [expandedProtocol, setExpandedProtocol] = useState(false);
+  const [showDone, setShowDone] = useState(false);
 
-  // ─── Filtering ──────────────────────────────────────────────────
-  const filteredTasks = activeWorkstream
-    ? tasks.filter((t) => t.workstream === activeWorkstream)
-    : tasks;
+  // Filter by phase + workstream
+  let filtered = tasks.filter((t) => t.phase === activePhaseNum);
+  if (activeWorkstream) {
+    filtered = filtered.filter((t) => t.workstream === activeWorkstream);
+  }
 
-  // ─── Active phase ───────────────────────────────────────────────
-  const activePhase = phases.find((p) => p.status === "active") ?? phases[0];
+  // Separate done vs active
+  const activeTasks = filtered.filter((t) => t.status !== "done");
+  const doneTotalInPhase = filtered.filter((t) => t.status === "done");
+
+  // Group by priority, sort within each group by due date
+  const priorityGroups = (["critical", "high", "medium", "low"] as const).map((priority) => {
+    const groupTasks = activeTasks
+      .filter((t) => t.priority === priority)
+      .sort((a, b) => {
+        // Sort by due date, then by status (blocked first)
+        const statusOrder: Record<string, number> = { blocked: 0, in_progress: 1, todo: 2 };
+        const sa = statusOrder[a.status] ?? 9;
+        const sb = statusOrder[b.status] ?? 9;
+        if (sa !== sb) return sa - sb;
+        return 0;
+      });
+    return { priority, tasks: groupTasks };
+  }).filter((g) => g.tasks.length > 0);
+
+  // Status counts for current filter
+  const statusCounts = filtered.reduce((acc, t) => {
+    acc[t.status] = (acc[t.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const activePhase = phases.find((p) => p.phaseNumber === activePhaseNum);
 
   return (
     <div className="space-y-6">
       {/* ═══ Header ═══════════════════════════════════════════════ */}
       <div>
         <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-slate-100">
-          UUL Compass:{" "}
-          <span className="text-[#dfc299]">100-Day Operational Mandate</span>
+          100-Day Plan
         </h1>
-        <p className="mt-2 text-sm text-slate-400 max-w-2xl leading-relaxed">
-          Precision alignment and stabilization of cross-entity operations.
-          Synchronized execution across Finance, Operations, Sales, Brand,
-          Technology, and Organization workstreams.
+        <p className="mt-2 text-sm text-slate-400">
+          {totalTasks} tasks across 6 workstreams &middot; {doneTasks} completed ({directivesPct}%)
         </p>
       </div>
 
-      {/* ═══ Phase Timeline ═══════════════════════════════════════ */}
-      <div className="rounded-lg bg-[#131b2d] border border-slate-700/40 border-t-2 border-t-[#dfc299]/40 overflow-hidden">
-        {/* Phase segments */}
-        <div className="flex h-12">
+      {/* ═══ Phase Tabs ═══════════════════════════════════════════ */}
+      <div className="rounded-lg bg-[#131b2d] border border-slate-700/40 overflow-hidden">
+        <div className="flex">
           {phases.map((phase) => {
-            const isActive = phase.status === "active";
+            const isSelected = phase.phaseNumber === activePhaseNum;
+            const phaseTasks = tasks.filter((t) => t.phase === phase.phaseNumber);
+            const phaseDone = phaseTasks.filter((t) => t.status === "done").length;
             return (
-              <div
+              <button
                 key={phase.id}
-                className={`flex-1 flex items-center justify-center gap-2 text-[10px] tracking-[0.2em] uppercase transition-colors cursor-default ${
-                  isActive
-                    ? "bg-[#00389a] text-blue-200 border-b-2 border-blue-400"
-                    : "text-slate-500 hover:text-slate-300"
+                onClick={() => setActivePhaseNum(phase.phaseNumber as 1 | 2 | 3)}
+                className={`flex-1 flex flex-col items-center py-3 px-2 transition-colors ${
+                  isSelected
+                    ? "bg-[#1a2744] border-b-2 border-[#b4c5ff]"
+                    : "hover:bg-[#171f32] border-b-2 border-transparent"
                 }`}
               >
-                <span className="material-symbols-outlined text-[14px] opacity-60">
-                  {phase.phaseNumber === 1
-                    ? "shield"
-                    : phase.phaseNumber === 2
-                    ? "tune"
-                    : "rocket_launch"}
+                <span className={`text-[10px] uppercase tracking-wider font-semibold ${
+                  isSelected ? "text-[#b4c5ff]" : "text-slate-500"
+                }`}>
+                  Phase {phase.phaseNumber}
                 </span>
-                <span className="font-semibold">
-                  Phase {phase.phaseNumber}: {phase.name}
+                <span className={`text-xs mt-0.5 ${isSelected ? "text-slate-300" : "text-slate-600"}`}>
+                  {phase.name}
                 </span>
-                <span className="hidden sm:inline opacity-60">
-                  Days {phase.startDay}–{phase.endDay}
+                <span className="text-[10px] text-slate-600 mt-0.5 tabular-nums">
+                  {phaseDone}/{phaseTasks.length} done
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
 
-        {/* Meta row */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-700/30">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px] text-slate-500">
-                schedule
-              </span>
-              <span className="text-[11px] text-slate-400">
-                Elapsed Time:{" "}
-                <span className="text-slate-200 font-semibold tabular-nums">
-                  {currentDay} Days
-                </span>
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px] text-slate-500">
-                check_circle
-              </span>
-              <span className="text-[11px] text-slate-400">
-                Directives Met:{" "}
-                <span className="text-slate-200 font-semibold tabular-nums">
-                  {directivesPct}%
-                </span>
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setExpandedProtocol(!expandedProtocol)}
-            className="text-[10px] tracking-[0.15em] uppercase text-[#dfc299]/80 hover:text-[#dfc299] transition-colors flex items-center gap-1"
-          >
-            <span className="material-symbols-outlined text-[14px]">
-              {expandedProtocol ? "expand_less" : "expand_more"}
+        {/* Phase info bar */}
+        {activePhase && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-700/30">
+            <span className="text-[11px] text-slate-400">
+              {activePhase.subtitle}
             </span>
-            {expandedProtocol ? "Collapse Protocol" : "Expand Protocol"}
-          </button>
-        </div>
+            <span className="text-[11px] text-slate-500 tabular-nums">
+              Days {activePhase.startDay}–{activePhase.endDay} &middot; {activePhase.startDate} – {activePhase.endDate}
+            </span>
+          </div>
+        )}
+      </div>
 
-        {/* Expanded protocol: decision gates */}
-        {expandedProtocol && (
-          <div className="px-5 pb-4 border-t border-slate-700/30 pt-3">
-            <div className="text-[10px] tracking-[0.2em] uppercase text-slate-500 mb-3 font-semibold">
-              Decision Gates
+      {/* ═══ Workstream Filters ═══════════════════════════════════ */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setActiveWorkstream(null)}
+          className={`px-4 py-1.5 rounded-full text-[11px] uppercase font-semibold transition-all ${
+            activeWorkstream === null
+              ? "bg-[#1a2744] text-[#b4c5ff] border border-[#b4c5ff]/30"
+              : "bg-[#131b2d] text-slate-400 hover:text-slate-200 border border-slate-700/40"
+          }`}
+        >
+          All
+        </button>
+        {workstreams.map((ws) => {
+          const count = tasks.filter((t) => t.phase === activePhaseNum && t.workstream === ws.name).length;
+          if (count === 0) return null;
+          return (
+            <button
+              key={ws.id}
+              onClick={() => setActiveWorkstream(activeWorkstream === ws.name ? null : ws.name)}
+              className={`px-4 py-1.5 rounded-full text-[11px] uppercase font-semibold transition-all flex items-center gap-2 ${
+                activeWorkstream === ws.name
+                  ? "bg-[#1a2744] text-[#b4c5ff] border border-[#b4c5ff]/30"
+                  : "bg-[#131b2d] text-slate-400 hover:text-slate-200 border border-slate-700/40"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: ws.color }} />
+              {ws.name}
+              <span className="text-slate-600">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ═══ Status Summary ═══════════════════════════════════════ */}
+      <div className="flex flex-wrap gap-3">
+        {(["blocked", "in_progress", "todo", "done"] as const).map((status) => {
+          const count = statusCounts[status] || 0;
+          const cfg = STATUS_CONFIG[status];
+          return (
+            <span key={status} className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-3 py-1.5 text-xs">
+              <span className={`material-symbols-outlined text-sm ${cfg.color}`}>{cfg.icon}</span>
+              <span className="tabular-nums font-medium text-white">{count}</span>
+              <span className="text-slate-500">{cfg.label}</span>
+            </span>
+          );
+        })}
+      </div>
+
+      {/* ═══ Priority-Grouped Task List ════════════════════════════ */}
+      <div className="space-y-6">
+        {priorityGroups.map((group) => {
+          const cfg = PRIORITY_CONFIG[group.priority];
+          return (
+            <div key={group.priority}>
+              {/* Priority group header */}
+              <div className={`flex items-center gap-3 mb-3 border-l-2 ${cfg.border} pl-3`}>
+                <span className={`text-[10px] uppercase tracking-widest font-semibold ${cfg.text}`}>
+                  {cfg.label}
+                </span>
+                <span className="text-[10px] text-slate-600 tabular-nums">{group.tasks.length}</span>
+              </div>
+
+              {/* Tasks */}
+              <div className={`space-y-1.5 ${cfg.opacity}`}>
+                {group.tasks.map((task) => (
+                  <TaskRow key={task.id} task={task} />
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {gates.map((gate) => {
+          );
+        })}
+
+        {priorityGroups.length === 0 && doneTotalInPhase.length === 0 && (
+          <div className="rounded-lg bg-[#131b2d] p-8 text-center text-sm text-slate-500">
+            No tasks in this phase{activeWorkstream ? ` for ${activeWorkstream}` : ""}.
+          </div>
+        )}
+
+        {/* Completed section (collapsed by default) */}
+        {doneTotalInPhase.length > 0 && (
+          <div className="pt-4">
+            <button
+              onClick={() => setShowDone(!showDone)}
+              className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">
+                {showDone ? "expand_less" : "expand_more"}
+              </span>
+              {doneTotalInPhase.length} completed
+            </button>
+            {showDone && (
+              <div className="space-y-1.5 mt-2 opacity-50">
+                {doneTotalInPhase.map((task) => (
+                  <TaskRow key={task.id} task={task} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ═══ Decision Gates ═══════════════════════════════════════ */}
+      {(() => {
+        const phaseGates = gates.filter((g) => g.phaseId === `phase-${activePhaseNum}`);
+        if (phaseGates.length === 0) return null;
+        return (
+          <div>
+            <h2 className="text-[10px] tracking-widest uppercase text-slate-500 font-semibold mb-3">
+              Decision Gates
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {phaseGates.map((gate) => {
                 const isPassed = gate.status === "passed";
-                const isReady = gate.status === "ready";
                 return (
                   <div
                     key={gate.id}
-                    className={`rounded-md border p-3 ${
+                    className={`rounded-lg border p-4 ${
                       isPassed
-                        ? "border-green-500/30 bg-green-500/5"
-                        : isReady
-                        ? "border-blue-500/30 bg-blue-500/5"
-                        : "border-slate-700/40 bg-slate-800/20"
+                        ? "border-emerald-500/30 bg-emerald-500/5"
+                        : "border-[#dfc299]/20 bg-[#131b2d]"
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <span
-                        className={`material-symbols-outlined text-[14px] ${
-                          isPassed
-                            ? "text-green-400"
-                            : isReady
-                            ? "text-blue-400"
-                            : "text-slate-500"
-                        }`}
-                      >
-                        {isPassed ? "check_circle" : isReady ? "pending" : "radio_button_unchecked"}
+                      <span className={`material-symbols-outlined text-sm ${
+                        isPassed ? "text-emerald-400" : "text-[#dfc299]"
+                      }`}>
+                        {isPassed ? "check_circle" : "door_front"}
                       </span>
                       <span className="text-[10px] font-mono text-slate-500 tabular-nums">
-                        Day {gate.dayNumber}
+                        Day {gate.dayNumber} &middot; {gate.targetDate}
                       </span>
                     </div>
-                    <div className="text-xs font-medium text-slate-300">
-                      {gate.name}
-                    </div>
-                    <div className="text-[10px] text-slate-500 mt-1">
-                      {gate.owner}
-                    </div>
+                    <p className="text-sm text-slate-200">{gate.name}</p>
+                    <p className="text-[11px] text-slate-500 mt-1">{gate.owner}</p>
                   </div>
                 );
               })}
             </div>
           </div>
-        )}
-      </div>
-
-      {/* ═══ Filter Pills ═════════════════════════════════════════ */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setActiveWorkstream(null)}
-          className={`px-4 py-1.5 rounded-full text-[11px] tracking-[0.1em] uppercase font-semibold transition-all ${
-            activeWorkstream === null
-              ? "bg-[#00389a] text-blue-100 shadow-lg shadow-blue-900/20"
-              : "bg-[#131b2d] text-slate-400 hover:text-slate-200 border border-slate-700/40"
-          }`}
-        >
-          All Workstreams
-        </button>
-        {workstreams.map((ws) => (
-          <button
-            key={ws.id}
-            onClick={() =>
-              setActiveWorkstream(activeWorkstream === ws.name ? null : ws.name)
-            }
-            className={`px-4 py-1.5 rounded-full text-[11px] tracking-[0.1em] uppercase font-semibold transition-all flex items-center gap-2 ${
-              activeWorkstream === ws.name
-                ? "bg-[#00389a] text-blue-100 shadow-lg shadow-blue-900/20"
-                : "bg-[#131b2d] text-slate-400 hover:text-slate-200 border border-slate-700/40"
-            }`}
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: ws.color }}
-            />
-            {ws.name}
-          </button>
-        ))}
-      </div>
-
-      {/* ═══ Kanban Board ═════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {STATUS_COLUMNS.map((col) => {
-          const columnTasks = filteredTasks.filter((t) => t.status === col.key);
-          return (
-            <div key={col.key} className="space-y-3">
-              {/* Column header */}
-              <div
-                className={`border-l-2 ${col.borderColor} pl-3 flex items-center justify-between`}
-              >
-                <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-slate-400">
-                  {col.label}
-                </span>
-                <span
-                  className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: col.color + "18",
-                    color: col.color,
-                  }}
-                >
-                  {columnTasks.length}
-                </span>
-              </div>
-
-              {/* Cards */}
-              <div className="space-y-3">
-                {columnTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} columnColor={col.color} />
-                ))}
-                {columnTasks.length === 0 && (
-                  <div className="text-center py-8 text-slate-600 text-[11px] tracking-wider uppercase">
-                    No directives
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ═══ Metric Dashboard (Bento) ═════════════════════════════ */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Resource Allocation Chart */}
-        <div className="col-span-12 lg:col-span-8 bg-[#131b2d] rounded-lg border border-slate-700/40 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-[10px] tracking-[0.2em] uppercase text-slate-500 font-semibold">
-                Resource Allocation Drift
-              </div>
-              <div className="text-lg font-serif text-slate-200 mt-1">
-                Task Distribution by Workstream
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-[20px] text-slate-600">
-              bar_chart
-            </span>
-          </div>
-          {/* Bar chart mockup */}
-          <div className="flex items-end gap-3 h-40 pt-4">
-            {workstreams.map((ws) => {
-              const wsTasks = tasks.filter((t) => t.workstream === ws.name);
-              const total = wsTasks.length;
-              const done = wsTasks.filter((t) => t.status === "done").length;
-              const active = wsTasks.filter(
-                (t) => t.status === "in_progress"
-              ).length;
-              const barHeight = Math.max((total / 25) * 100, 8);
-              const doneHeight = total > 0 ? (done / total) * barHeight : 0;
-              const activeHeight =
-                total > 0 ? (active / total) * barHeight : 0;
-
-              return (
-                <div
-                  key={ws.id}
-                  className="flex-1 flex flex-col items-center gap-2"
-                >
-                  <div
-                    className="w-full rounded-t-sm relative overflow-hidden"
-                    style={{
-                      height: `${barHeight}%`,
-                      backgroundColor: ws.color + "20",
-                    }}
-                  >
-                    {/* Done portion */}
-                    <div
-                      className="absolute bottom-0 w-full transition-all duration-500"
-                      style={{
-                        height: `${doneHeight + activeHeight}%`,
-                        backgroundColor: ws.color + "60",
-                      }}
-                    />
-                    <div
-                      className="absolute bottom-0 w-full transition-all duration-500"
-                      style={{
-                        height: `${doneHeight}%`,
-                        backgroundColor: ws.color,
-                      }}
-                    />
-                  </div>
-                  <span className="text-[9px] text-slate-500 text-center leading-tight">
-                    {ws.name.split(" ")[0]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-700/30">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500" />
-              <span className="text-[10px] text-slate-500">Executed</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/50" />
-              <span className="text-[10px] text-slate-500">Active</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500/15" />
-              <span className="text-[10px] text-slate-500">Pending</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Command Center Status */}
-        <div className="col-span-12 lg:col-span-4 bg-[#00389a] rounded-lg p-5 flex flex-col justify-between">
-          <div>
-            <div className="text-[10px] tracking-[0.2em] uppercase text-blue-300/60 font-semibold">
-              Command Center
-            </div>
-            <div className="text-lg font-serif text-white mt-1">
-              Operational Status
-            </div>
-          </div>
-
-          <div className="space-y-4 mt-6">
-            <StatusRow
-              icon="speed"
-              label="Active Phase"
-              value={activePhase?.name ?? "—"}
-            />
-            <StatusRow
-              icon="assignment"
-              label="Total Directives"
-              value={`${totalTasks}`}
-            />
-            <StatusRow
-              icon="check_circle"
-              label="Executed"
-              value={`${doneTasks} (${directivesPct}%)`}
-            />
-            <StatusRow
-              icon="block"
-              label="Impediments"
-              value={`${tasks.filter((t) => t.status === "blocked").length}`}
-            />
-            <StatusRow
-              icon="groups"
-              label="Cross-Office"
-              value={`${tasks.filter((t) => t.isCrossOffice).length} tasks`}
-            />
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-blue-400/20">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400" />
-              </span>
-              <span className="text-[11px] text-blue-200">
-                System Operational — Day {currentDay}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
     </div>
   );
 }
 
-// ─── Task Card ───────────────────────────────────────────────────
-function TaskCard({
-  task,
-  columnColor,
-}: {
-  task: TaskData;
-  columnColor: string;
-}) {
-  const isCritical = task.priority === "critical";
-  const isInProgress = task.status === "in_progress";
-
-  // Simulated progress for in-progress items
-  const progressPct = isInProgress ? Math.floor(Math.random() * 40 + 20) : 0;
+// ─── Task Row ───────────────────────────────────────────────────
+function TaskRow({ task }: { task: TaskData }) {
+  const cfg = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo;
+  const isDone = task.status === "done";
 
   return (
-    <div
-      className="bg-[#131b2d] p-4 rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-colors"
-      style={{ borderTopWidth: "2px", borderTopColor: columnColor }}
-    >
-      {/* Task code + critical badge */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-mono text-[10px] text-slate-500">
-          {task.taskCode}
-        </span>
-        {isCritical && (
-          <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[9px] tracking-[0.15em] uppercase text-red-400 font-semibold">
-              Critical Path
-            </span>
-          </div>
-        )}
-      </div>
+    <div className="flex items-center gap-3 rounded-lg bg-[#131b2d] px-4 py-3 hover:bg-[#171f32] transition-colors">
+      {/* Status icon */}
+      <span className={`material-symbols-outlined text-base shrink-0 ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+        {cfg.icon}
+      </span>
+
+      {/* Assignee (left side — who owns this?) */}
+      <span className={`text-[11px] shrink-0 w-16 truncate ${isDone ? "text-slate-600" : "text-slate-400"}`}>
+        {task.assignee?.name.split(" ")[0] || "—"}
+      </span>
+
+      {/* Due date (left side — when is it due?) */}
+      <span className={`text-[10px] font-mono tabular-nums shrink-0 w-12 ${isDone ? "text-slate-600" : "text-slate-500"}`}>
+        {task.dueDate || "—"}
+      </span>
+
+      {/* Task code */}
+      <span className="text-[10px] font-mono text-slate-600 shrink-0 w-8">{task.taskCode}</span>
 
       {/* Title */}
-      <div className="font-serif text-sm text-slate-200 leading-snug mb-3">
-        {task.title}
+      <div className="flex-1 min-w-0">
+        <span className={`text-sm truncate block ${isDone ? "line-through text-slate-600" : "text-slate-200"}`}>
+          {task.title}
+        </span>
       </div>
 
-      {/* Progress bar for in-progress */}
-      {isInProgress && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] tracking-[0.1em] uppercase text-blue-400/70">
-              {progressPct}% Synchronized
-            </span>
-          </div>
-          <div className="h-1 rounded-full bg-slate-700 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-blue-500 transition-all"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-        </div>
+      {/* Status badge (for blocked/in_progress) */}
+      {(task.status === "blocked" || task.status === "in_progress") && (
+        <span className={`text-[9px] uppercase tracking-wider font-semibold shrink-0 ${cfg.color}`}>
+          {cfg.label}
+        </span>
       )}
-
-      {/* Footer: assignee + due date */}
-      <div className="flex items-center justify-between">
-        {task.assignee ? (
-          <div className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border border-slate-600/50"
-              style={{
-                backgroundColor: task.workstreamColor
-                  ? task.workstreamColor + "20"
-                  : "#1e293b",
-                color: task.workstreamColor ?? "#94a3b8",
-              }}
-            >
-              {task.assignee.initials}
-            </div>
-            <span className="text-[10px] text-slate-500 truncate max-w-[100px]">
-              {task.assignee.name}
-            </span>
-          </div>
-        ) : (
-          <div />
-        )}
-        {task.dueDate && (
-          <span className="text-[10px] text-slate-500 font-mono tabular-nums">
-            {task.dueDate}
-          </span>
-        )}
-      </div>
 
       {/* Cross-office badge */}
       {task.isCrossOffice && (
-        <div className="mt-2 flex items-center gap-1">
-          <span className="material-symbols-outlined text-[12px] text-[#dfc299]/50">
-            language
-          </span>
-          <span className="text-[9px] tracking-[0.1em] uppercase text-[#dfc299]/50">
-            Cross-Office
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Status Row (Command Center) ─────────────────────────────────
-function StatusRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-[16px] text-blue-300/50">
-          {icon}
+        <span className="text-[9px] uppercase tracking-wider text-[#dfc299]/60 shrink-0">
+          Cross-Office
         </span>
-        <span className="text-[11px] text-blue-200/70">{label}</span>
-      </div>
-      <span className="text-[11px] font-semibold text-white tabular-nums">
-        {value}
-      </span>
+      )}
     </div>
   );
 }

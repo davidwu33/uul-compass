@@ -4,10 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Settings, Users, Building2, Globe } from "lucide-react";
 
 const teamMembers = [
-  { name: "Jerry Shi", nameZh: "施嘉懋", role: "owner", title: "Owner & Board Chair", location: "Asia / US", email: "jerryshi@synergiscap.com" },
-  { name: "Alic Ge", nameZh: "葛总", role: "board", title: "Board Director", location: "Hong Kong", email: "" },
-  { name: "Billy", nameZh: "大哥", role: "board", title: "Board Director", location: "", email: "" },
-  { name: "Season", nameZh: "", role: "board", title: "Board Director, Finance", location: "Ningbo", email: "" },
+  { name: "Alic Ge", nameZh: "葛成", role: "board", title: "Chairman of the Board", location: "Ningbo", email: "" },
+  { name: "Jerry Shi", nameZh: "施童洲", role: "owner", title: "PE Owner & Board Member", location: "Toronto / Asia", email: "jerryshi@synergiscap.com" },
+  { name: "Billy Cheng", nameZh: "", role: "board", title: "HK CEO & Board Member", location: "Hong Kong", email: "" },
+  { name: "Season Yu", nameZh: "", role: "advisor", title: "PE Partner, Finance Advisor", location: "Shanghai", email: "" },
   { name: "Jason Likens", nameZh: "", role: "executive", title: "CEO, US Operations", location: "US", email: "" },
   { name: "Josh Foster", nameZh: "", role: "executive", title: "COO, US Operations", location: "US", email: "" },
   { name: "Serena Lin", nameZh: "林静", role: "executive", title: "CFO", location: "", email: "" },
@@ -17,6 +17,7 @@ const teamMembers = [
 const roleConfig: Record<string, { label: string; className: string }> = {
   owner: { label: "Owner", className: "bg-purple-50 text-purple-700 border-purple-200" },
   board: { label: "Board", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  advisor: { label: "Advisor", className: "bg-amber-50 text-amber-700 border-amber-200" },
   executive: { label: "Executive", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   operator: { label: "Team", className: "bg-slate-50 text-slate-600 border-slate-200" },
 };
@@ -24,15 +25,16 @@ const roleConfig: Record<string, { label: string; className: string }> = {
 const avatarColors: Record<string, string> = {
   owner: "bg-purple-600 text-white",
   board: "bg-blue-600 text-white",
+  advisor: "bg-amber-600 text-white",
   executive: "bg-emerald-600 text-white",
   operator: "bg-slate-500 text-white",
 };
 
 const entities = [
   { name: "UUL Global", code: "UUL", desc: "Parent company, US HQ", offices: "US, CN, HK, VN" },
-  { name: "Meihang", code: "MH", desc: "China operations", offices: "SZ, SH, NB, GZ" },
+  { name: "US United Logistics", code: "MH", desc: "China operations", offices: "SZ, SH, NB, GZ" },
   { name: "Star Navigation", code: "XH", desc: "Northern China logistics", offices: "XM, SZ" },
-  { name: "Sage Line", code: "SAGE", desc: "Independent operations", offices: "—" },
+  { name: "Sageline", code: "SAGE", desc: "Independent operations", offices: "—" },
 ];
 
 export default function SettingsPage() {

@@ -30,8 +30,8 @@ export function SideNav() {
             </span>
           </div>
           <div>
-            <p className="font-serif text-blue-100 text-sm">HQ Command</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Global Logistics</p>
+            <p className="font-serif text-blue-100 text-sm">Compass OS</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Intelligence Hub</p>
           </div>
         </div>
 

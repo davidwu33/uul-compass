@@ -114,11 +114,11 @@ function PriorityBadge({ priority }: { priority: string }) {
 }
 
 function StatusDot({ status }: { status: string }) {
-  if (status === "review") {
+  if (status === "in_progress") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-400">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-        In Review
+      <span className="inline-flex items-center gap-1.5 text-[11px] text-blue-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+        In Progress
       </span>
     );
   }
@@ -208,16 +208,7 @@ function WeekCard({ task }: { task: TaskData }) {
 
       <div className="flex items-center gap-2 shrink-0">
         <AssigneeAvatar assignee={task.assignee} />
-        {task.status === "review" ? (
-          <>
-            <button className="rounded border border-slate-600 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:border-slate-500 hover:text-slate-300 transition-colors">
-              View Data
-            </button>
-            <button className="rounded bg-[#b4c5ff]/15 border border-[#b4c5ff]/30 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#b4c5ff] hover:bg-[#b4c5ff]/25 transition-colors">
-              Authorize
-            </button>
-          </>
-        ) : (
+        {(
           <button className="rounded bg-[#b4c5ff]/15 border border-[#b4c5ff]/30 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#b4c5ff] hover:bg-[#b4c5ff]/25 transition-colors">
             Execute
           </button>

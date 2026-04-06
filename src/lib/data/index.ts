@@ -12,6 +12,9 @@ export type {
   ValueInitiative,
   ValueSnapshot,
   MetricData,
+  PillarMetric,
+  PillarSubItem,
+  FinancialPulseMetric,
   ActivityItem,
 } from "./types";
 
@@ -21,7 +24,8 @@ import { demoWorkstreams } from "./demo/workstreams";
 import { demoPhases, demoGates } from "./demo/phases";
 import { demoRisks } from "./demo/risks";
 import { demoValueInitiatives, demoValueSnapshots } from "./demo/value-gains";
-import { demoScorecard, demoAllMetrics } from "./demo/metrics";
+import { demoScorecard, demoPillarScorecard, demoAllMetrics, demoFinancialPulse } from "./demo/metrics";
+import { compassConfig } from "./config";
 
 // ─── Getters ───────────────────────────────────────────────────
 
@@ -77,8 +81,40 @@ export function getScorecard() {
   return demoScorecard;
 }
 
+export function getPillarScorecard() {
+  return demoPillarScorecard;
+}
+
 export function getAllMetrics() {
   return demoAllMetrics;
+}
+
+export function getFinancialPulse() {
+  return demoFinancialPulse;
+}
+
+// Tasks due within the next 7 days from current day position
+export function getTasksDueThisWeek() {
+  const currentDay = getCurrentDay();
+  return demoTasks.filter((t) => {
+    if (!t.dueDate || t.status === "done") return false;
+    const dayNum = dateToDayNumber(t.dueDate);
+    return dayNum >= currentDay && dayNum <= currentDay + 7;
+  });
+}
+
+// Upcoming decisions: gates within 14 days + critical tasks needing board input
+export function getUpcomingDecisions() {
+  const currentDay = getCurrentDay();
+  const upcomingGates = demoGates.filter(
+    (g) => g.status === "upcoming" && g.dayNumber >= currentDay && g.dayNumber <= currentDay + 14
+  );
+  const criticalTasks = demoTasks.filter((t) => {
+    if (t.priority !== "critical" || t.status === "done" || !t.dueDate) return false;
+    const dayNum = dateToDayNumber(t.dueDate);
+    return dayNum >= currentDay && dayNum <= currentDay + 14;
+  });
+  return { gates: upcomingGates, criticalTasks };
 }
 
 // ─── Computed helpers ──────────────────────────────────────────
@@ -109,10 +145,28 @@ export function getUpcomingMilestones(limit = 5) {
 }
 
 export function getCurrentDay(): number {
-  const start = new Date("2026-04-01");
+  const { goLiveDate, totalDays } = compassConfig;
+  if (!goLiveDate) return 1;
+  const start = new Date(goLiveDate);
   const now = new Date();
   const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  return Math.max(1, Math.min(100, diff + 1));
+  return Math.max(1, Math.min(totalDays, diff + 1));
+}
+
+// Convert "Apr 7" style date to day number (1-100) relative to Apr 1 start
+function dateToDayNumber(dateStr: string): number {
+  const months: Record<string, number> = {
+    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6,
+    Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+  };
+  const parts = dateStr.split(" ");
+  if (parts.length !== 2) return 999;
+  const month = months[parts[0]];
+  const day = parseInt(parts[1]);
+  if (month === undefined || isNaN(day)) return 999;
+  const target = new Date(2026, month, day);
+  const start = new Date(2026, 3, 1); // Apr 1
+  return Math.floor((target.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 }
 
 // Simple overdue check against "Apr 7" style dates

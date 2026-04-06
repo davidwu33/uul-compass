@@ -42,12 +42,12 @@
 - Risk cards: full-width with border-l-[6px], 2-column internal (2/3 content + 1/3 metadata)
 
 ### Navigation
-- Top nav: "Global Attaché" branding, tab-style links with border-b-2 active
+- Top nav: "UUL Global" branding, tab-style links with border-b-2 active
 - Sidebar nav: Serif heading, Material icons, border-l-4 active indicator
 - Bottom nav: 5 tabs with active bg-blue-900/40 pill
 
 ### Key Branding
-- App name in top nav: "Global Attaché"  
-- Sidebar heading: "HQ Command / Global Logistics"
-- App identity: "UUL Compass"
+- App name in top nav: "UUL Global"  
+- Sidebar heading: "Compass OS / Intelligence Hub"
+- App identity: "UUL Compass OS"
 - Tertiary gold used for section labels ("Strategic performance", "Operator Queue")

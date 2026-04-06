@@ -19,13 +19,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UUL Compass | Global Command",
-  description: "Post-Merger Integration Command Center",
+  title: "UUL Compass OS | Intelligence Hub",
+  description: "UUL Global Intelligence Hub",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Compass",
+    title: "Compass OS",
   },
 };
 
