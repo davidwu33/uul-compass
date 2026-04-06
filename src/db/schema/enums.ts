@@ -285,3 +285,45 @@ export const actionItemStatusEnum = pgEnum("action_item_status", [
   "overdue",
   "cancelled",
 ]);
+
+// ─── Phases & Gates ────────────────────────────────────────────
+export const phaseStatusEnum = pgEnum("phase_status", [
+  "not_started",
+  "active",
+  "completed",
+]);
+
+export const gateStatusEnum = pgEnum("gate_status", [
+  "upcoming",
+  "ready",
+  "passed",
+  "failed",
+  "deferred",
+]);
+
+// ─── Value Gains ───────────────────────────────────────────────
+export const valueCategoryEnum = pgEnum("value_category", [
+  "cost_savings",
+  "revenue_growth",
+  "cash_flow",
+]);
+
+export const valueStatusEnum = pgEnum("value_status", [
+  "planned",
+  "in_progress",
+  "capturing",
+  "captured",
+]);
+
+// ─── Risks ─────────────────────────────────────────────────────
+export const riskSeverityEnum = pgEnum("risk_severity", [
+  "high",
+  "medium",
+  "low",
+]);
+
+export const riskStatusEnum = pgEnum("risk_status", [
+  "open",
+  "mitigating",
+  "resolved",
+]);

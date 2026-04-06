@@ -1,293 +1,417 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import {
-  Target,
-  AlertTriangle,
-  CalendarCheck,
-  Activity,
-  ArrowUpRight,
-  Clock,
-  TrendingUp,
-  Zap,
-  Layers,
-} from "lucide-react";
+  getTaskStats,
+  getWorkstreams,
+  getNextGate,
+  getScorecard,
+  getNeedsAttention,
+  getUpcomingMilestones,
+  getCurrentDay,
+} from "@/lib/data";
 
-const stats = {
-  completionPercent: 8,
-  totalTasks: 52,
-  completedTasks: 4,
-  overdueTasks: 3,
-  dayNumber: 2,
-  daysRemaining: 98,
+const SCORECARD_ICONS: Record<string, string> = {
+  financial: "speed",
+  operations: "verified_user",
+  technology: "hub",
+  people: "payments",
 };
 
-const upcomingMilestones = [
-  { name: "VP Finance Hire Approved", workstream: "Finance", dueDate: "Apr 4", status: "at_risk" as const, color: "#ef4444" },
-  { name: "Silfab 30% AR Prepayment", workstream: "Finance", dueDate: "Apr 7", status: "in_progress" as const, color: "#ef4444" },
-  { name: "Target Account List Complete", workstream: "Sales", dueDate: "Apr 5", status: "not_started" as const, color: "#3b82f6" },
-  { name: "Corporate Deck v2 Draft", workstream: "Marketing", dueDate: "Apr 2", status: "in_progress" as const, color: "#8b5cf6" },
-];
-
-const recentActivity = [
-  { action: "created task", target: "VP Finance job posting", actor: "Jerry", initials: "JS", time: "2h ago", color: "bg-blue-500" },
-  { action: "completed", target: "Board seat assignments", actor: "Jerry", initials: "JS", time: "3h ago", color: "bg-emerald-500" },
-  { action: "commented on", target: "Silfab AR collection plan", actor: "Jerry", initials: "JS", time: "5h ago", color: "bg-amber-500" },
-  { action: "created workstream", target: "Technology & AI", actor: "Jerry", initials: "JS", time: "1d ago", color: "bg-cyan-500" },
-];
-
-const statusConfig = {
-  not_started: { label: "Not Started", className: "bg-slate-100 text-slate-600 border-slate-200" },
-  in_progress: { label: "In Progress", className: "bg-sky-50 text-sky-700 border-sky-200" },
-  at_risk: { label: "At Risk", className: "bg-amber-50 text-amber-700 border-amber-200" },
-  completed: { label: "Completed", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+const STATUS_COLORS: Record<string, string> = {
+  green: "text-emerald-400",
+  amber: "text-amber-400",
+  red: "text-red-400",
+  gray: "text-slate-500",
 };
 
-const workstreamProgress = [
-  { name: "Finance", color: "#ef4444", pct: 8 },
-  { name: "Operations", color: "#f97316", pct: 0 },
-  { name: "Sales", color: "#3b82f6", pct: 12 },
-  { name: "Marketing", color: "#8b5cf6", pct: 28 },
-  { name: "Tech & AI", color: "#06b6d4", pct: 0 },
-  { name: "Org & HR", color: "#22c55e", pct: 33 },
-];
+const STATUS_BORDER: Record<string, string> = {
+  green: "border-emerald-400",
+  amber: "border-amber-400",
+  red: "border-red-400",
+  gray: "border-slate-600",
+};
+
+const TREND_ARROWS: Record<string, string> = {
+  up: "arrow_upward",
+  down: "arrow_downward",
+  flat: "arrow_forward",
+};
 
 export default function DashboardPage() {
+  const stats = getTaskStats();
+  const workstreams = getWorkstreams();
+  const nextGate = getNextGate();
+  const scorecard = getScorecard();
+  const attentionTasks = getNeedsAttention();
+  const milestones = getUpcomingMilestones(5);
+  const currentDay = getCurrentDay();
+  const completionPct =
+    stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+  const daysRemaining = Math.max(0, 100 - currentDay);
+
+  // Status logic
+  let statusLabel = "On Track";
+  let dotColor = "bg-emerald-400";
+  if (stats.overdue > 2 || stats.blocked > 2) {
+    statusLabel = "At Risk";
+    dotColor = "bg-red-400";
+  } else if (stats.overdue > 0 || stats.blocked > 0) {
+    statusLabel = "Needs Attention";
+    dotColor = "bg-amber-400";
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Post-Merger Integration &middot; Day {stats.dayNumber} of 100
-        </p>
-      </div>
+    <div className="space-y-10">
+      {/* ── Hero Section ─────────────────────────────────────── */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+        {/* Left Column */}
+        <div className="lg:col-span-7 space-y-6">
+          {/* Status Badge */}
+          <div className="flex items-center gap-2.5">
+            <span
+              className={`inline-block h-2.5 w-2.5 rounded-full ${dotColor} animate-pulse`}
+            />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              {statusLabel}
+            </span>
+          </div>
 
-      {/* Hero progress card — elevated design */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[oklch(0.25_0.08_250)] via-[oklch(0.22_0.10_250)] to-[oklch(0.18_0.06_260)] text-white shadow-xl shadow-primary/15">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-full -translate-y-32 translate-x-32" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[oklch(0.65_0.15_195)]/10 to-transparent rounded-full translate-y-24 -translate-x-24" />
+          {/* Headline */}
+          <div>
+            <h1 className="font-serif text-5xl lg:text-6xl font-light tracking-tight text-white leading-[1.1]">
+              Institutional
+              <br />
+              Progress Audit
+            </h1>
+            <p className="mt-3 text-lg text-[#dfc299] font-serif italic">
+              100-Day Post-Merger Integration
+            </p>
+          </div>
 
-        <div className="relative p-6 lg:p-8">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm">
-                  <Layers className="h-4 w-4 text-[oklch(0.75_0.15_195)]" />
-                </div>
-                <span className="text-xs font-semibold uppercase tracking-widest text-white/50">100-Day Plan Progress</span>
-              </div>
-              <div className="flex items-baseline gap-3">
-                <span className="text-5xl lg:text-6xl font-bold tracking-tighter">{stats.completionPercent}%</span>
-                <div className="space-y-0.5">
-                  <p className="text-sm text-white/60">{stats.completedTasks} of {stats.totalTasks} tasks</p>
-                  <p className="text-xs text-white/40">{stats.daysRemaining} days remaining</p>
-                </div>
-              </div>
-              <div className="w-full max-w-sm">
-                <Progress
-                  value={stats.completionPercent}
-                  className="h-1.5 bg-white/10 [&>div]:bg-[oklch(0.75_0.15_195)]"
-                />
-              </div>
-            </div>
-
-            {/* Stats grid */}
-            <div className="flex gap-1">
-              <StatPill value={stats.overdueTasks} label="Overdue" color="text-red-300" />
-              <StatPill value={6} label="Active" color="text-[oklch(0.75_0.15_195)]" />
-              <StatPill value={22} label="Open" color="text-white/80" />
-            </div>
+          {/* Stat Pills */}
+          <div className="flex flex-wrap gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-4 py-2 text-sm">
+              <span className="material-symbols-outlined text-emerald-400 text-base">
+                check_circle
+              </span>
+              <span className="tabular-nums font-medium text-white">
+                {stats.done}
+              </span>
+              <span className="text-slate-500">Done</span>
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-4 py-2 text-sm">
+              <span className="material-symbols-outlined text-[#b4c5ff] text-base">
+                play_circle
+              </span>
+              <span className="tabular-nums font-medium text-white">
+                {stats.active}
+              </span>
+              <span className="text-slate-500">Active</span>
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-4 py-2 text-sm">
+              <span className="material-symbols-outlined text-amber-400 text-base">
+                schedule
+              </span>
+              <span className="tabular-nums font-medium text-white">
+                {stats.overdue}
+              </span>
+              <span className="text-slate-500">Overdue</span>
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-4 py-2 text-sm">
+              <span className="material-symbols-outlined text-red-400 text-base">
+                block
+              </span>
+              <span className="tabular-nums font-medium text-white">
+                {stats.blocked}
+              </span>
+              <span className="text-slate-500">Blocked</span>
+            </span>
           </div>
         </div>
-      </div>
 
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <KpiCard
-          icon={<Target className="h-4 w-4" />}
-          label="Workstreams"
-          value="6"
-          sub="all active"
-          trend="+2 this week"
-          trendUp
-        />
-        <KpiCard
-          icon={<AlertTriangle className="h-4 w-4" />}
-          label="Overdue"
-          value={String(stats.overdueTasks)}
-          sub="need attention"
-          accent="destructive"
-        />
-        <KpiCard
-          icon={<CalendarCheck className="h-4 w-4" />}
-          label="This Week"
-          value="4"
-          sub="milestones due"
-        />
-        <KpiCard
-          icon={<Zap className="h-4 w-4" />}
-          label="Blocked"
-          value="1"
-          sub="needs resolution"
-        />
-      </div>
+        {/* Right Column — Completion Ring */}
+        <div className="lg:col-span-5 flex flex-col items-end text-right space-y-4">
+          <p className="font-serif text-7xl lg:text-8xl font-light tabular-nums text-white tracking-tight">
+            {completionPct}
+            <span className="text-4xl text-slate-500">%</span>
+          </p>
 
-      {/* Workstream progress bars */}
-      <Card className="shadow-sm border-border/60">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">Workstream Progress</CardTitle>
-            <span className="text-xs text-muted-foreground">6 workstreams</span>
+          {/* Progress bar */}
+          <div className="w-full max-w-xs">
+            <div className="h-2 rounded-full bg-[#171f32] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#b4c5ff] transition-all duration-700"
+                style={{ width: `${Math.max(completionPct, 1)}%` }}
+              />
+            </div>
+            <p className="mt-2 text-[11px] text-slate-500 tabular-nums">
+              {stats.done} of {stats.total} tasks complete &middot;{" "}
+              {daysRemaining} days remaining
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-            {workstreamProgress.map((ws) => (
-              <div key={ws.name} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: ws.color }} />
-                    <span className="text-xs font-medium">{ws.name}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground tabular-nums">{ws.pct}%</span>
+        </div>
+      </section>
+
+      {/* ── Scorecard Grid (2x2) ────────────────────────────── */}
+      <section>
+        <div className="flex items-baseline justify-between mb-5">
+          <h2 className="font-serif text-2xl text-white">Key Metrics</h2>
+          <span className="text-[10px] uppercase tracking-widest text-slate-500">
+            Scorecard
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {scorecard.map((metric) => (
+            <div
+              key={metric.id}
+              className="relative h-44 rounded-lg bg-[#131b2d] border-t-2 border-[#dfc299] p-5 flex flex-col justify-between"
+            >
+              {/* Icon */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500">
+                    {metric.category}
+                  </span>
+                  <p className="text-slate-400 text-sm mt-0.5">
+                    {metric.name}
+                  </p>
                 </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <span className="material-symbols-outlined text-slate-600 text-xl">
+                  {SCORECARD_ICONS[metric.category] || "analytics"}
+                </span>
+              </div>
+
+              {/* Value */}
+              <div className="flex items-end justify-between">
+                <p
+                  className={`text-4xl font-light tabular-nums ${STATUS_COLORS[metric.status]}`}
+                >
+                  {metric.value}
+                </p>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  {metric.trend && (
+                    <span
+                      className={`material-symbols-outlined text-sm ${
+                        metric.trend === "up"
+                          ? "text-emerald-400"
+                          : metric.trend === "down"
+                            ? "text-red-400"
+                            : "text-slate-500"
+                      }`}
+                    >
+                      {TREND_ARROWS[metric.trend]}
+                    </span>
+                  )}
+                  <span className="tabular-nums">
+                    Target: {metric.target}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Workstream Progress ──────────────────────────────── */}
+      <section>
+        <div className="flex items-baseline justify-between mb-5">
+          <h2 className="font-serif text-2xl text-white">
+            Workstream Progress
+          </h2>
+          <span className="text-[10px] uppercase tracking-widest text-slate-500">
+            Aggregated Data
+          </span>
+        </div>
+        <div className="space-y-4">
+          {workstreams.map((ws) => {
+            const pct =
+              ws.taskCount > 0
+                ? Math.round((ws.completed / ws.taskCount) * 100)
+                : 0;
+            return (
+              <div key={ws.id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: ws.color }}
+                    />
+                    <span className="text-sm text-slate-300">{ws.name}</span>
+                  </div>
+                  <span className="text-sm tabular-nums text-slate-400">
+                    {pct}%
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-[#171f32] overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(ws.pct, 2)}%`, backgroundColor: ws.color }}
+                    style={{
+                      width: `${Math.max(pct, 1)}%`,
+                      backgroundColor: ws.color,
+                    }}
                   />
                 </div>
               </div>
-            ))}
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Needs Attention + Upcoming Milestones ────────────── */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: Critical Attention */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-red-400 text-lg">
+              warning
+            </span>
+            <h2 className="font-serif text-2xl text-red-400">
+              Critical Attention
+            </h2>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid lg:grid-cols-5 gap-4 lg:gap-6">
-        {/* Milestones */}
-        <Card className="lg:col-span-3 shadow-sm border-border/60">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">This Week&apos;s Milestones</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+          {attentionTasks.length === 0 ? (
+            <div className="rounded-lg bg-[#131b2d] p-5 text-sm text-slate-500">
+              No blocked or overdue tasks.
             </div>
-          </CardHeader>
-          <CardContent className="space-y-0.5">
-            {upcomingMilestones.map((m, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 py-3 px-3 rounded-xl hover:bg-muted/50 transition-colors group cursor-pointer"
-              >
+          ) : (
+            <div className="space-y-3">
+              {attentionTasks.map((task) => (
                 <div
-                  className="w-1 h-10 rounded-full shrink-0"
-                  style={{ backgroundColor: m.color }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium group-hover:text-primary transition-colors">{m.name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {m.workstream} &middot; Due {m.dueDate}
-                  </p>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] shrink-0 ${statusConfig[m.status].className}`}
+                  key={task.id}
+                  className="rounded-lg bg-red-500/10 border-l-2 border-red-400 p-4"
                 >
-                  {statusConfig[m.status].label}
-                </Badge>
-                <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Activity feed */}
-        <Card className="lg:col-span-2 shadow-sm border-border/60">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">Activity</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="relative space-y-0">
-              {/* Timeline line */}
-              <div className="absolute left-[13px] top-3 bottom-3 w-px bg-border" />
-              {recentActivity.map((a, i) => (
-                <div
-                  key={i}
-                  className="relative flex items-start gap-3 py-3 px-1"
-                >
-                  <div className={`relative z-10 h-[10px] w-[10px] rounded-full mt-1.5 ring-2 ring-background ${a.color}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-snug">
-                      <span className="font-medium">{a.actor}</span>{" "}
-                      <span className="text-muted-foreground">{a.action}</span>{" "}
-                      <span className="font-medium">{a.target}</span>
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{a.time}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                          {task.taskCode}
+                        </span>
+                        <span
+                          className={`text-[10px] uppercase tracking-wider font-semibold ${
+                            task.status === "blocked"
+                              ? "text-red-400"
+                              : "text-amber-400"
+                          }`}
+                        >
+                          {task.status === "blocked" ? "Blocked" : "Overdue"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-white truncate">
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        {task.dueDate && (
+                          <span className="text-[11px] text-slate-500 tabular-nums">
+                            Due {task.dueDate}
+                          </span>
+                        )}
+                        {task.assignee && (
+                          <span className="text-[11px] text-slate-500">
+                            {task.assignee.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      className="h-2 w-2 rounded-full shrink-0 mt-2"
+                      style={{ backgroundColor: task.workstreamColor }}
+                    />
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function StatPill({ value, label, color }: { value: number; label: string; color: string }) {
-  return (
-    <div className="flex flex-col items-center px-5 py-3 rounded-xl bg-white/5 backdrop-blur-sm min-w-[80px]">
-      <span className={`text-2xl font-bold tabular-nums ${color}`}>{value}</span>
-      <span className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5">{label}</span>
-    </div>
-  );
-}
-
-function KpiCard({
-  icon,
-  label,
-  value,
-  sub,
-  trend,
-  trendUp,
-  accent,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  sub: string;
-  trend?: string;
-  trendUp?: boolean;
-  accent?: "destructive";
-}) {
-  return (
-    <Card className="shadow-sm border-border/60 hover:shadow-md transition-all duration-200 group">
-      <CardContent className="pt-5 pb-4 px-5">
-        <div className="flex items-center gap-2 text-muted-foreground mb-3">
-          <div className={`flex items-center justify-center w-7 h-7 rounded-lg ${
-            accent === "destructive" ? "bg-red-50 text-red-500" : "bg-primary/5 text-primary"
-          }`}>
-            {icon}
-          </div>
-          <span className="text-[11px] font-semibold uppercase tracking-wider">{label}</span>
+          )}
         </div>
-        <div className={`text-3xl font-bold tracking-tight tabular-nums ${
-          accent === "destructive" ? "text-red-600" : ""
-        }`}>{value}</div>
-        <p className="text-xs text-muted-foreground mt-1">{sub}</p>
-        {trend && (
-          <div className="flex items-center gap-1 mt-2 text-xs">
-            {trendUp && <TrendingUp className="h-3 w-3 text-emerald-600" />}
-            <span className={trendUp ? "text-emerald-600 font-medium" : "text-muted-foreground"}>
-              {trend}
+
+        {/* Right: Strategic Milestones */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-[#dfc299] text-lg">
+              flag
+            </span>
+            <h2 className="font-serif text-2xl text-[#dfc299]">
+              Strategic Milestones
+            </h2>
+          </div>
+          {milestones.length === 0 ? (
+            <div className="rounded-lg bg-[#131b2d] p-5 text-sm text-slate-500">
+              All milestones completed.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {milestones.map((ms) => (
+                <div
+                  key={ms.id}
+                  className="rounded-lg bg-[#131b2d] p-4 flex items-center gap-4"
+                >
+                  {/* Date badge */}
+                  <div className="shrink-0 w-14 h-14 rounded-lg bg-[#171f32] flex flex-col items-center justify-center">
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                      {ms.targetDate.split(" ")[0]}
+                    </span>
+                    <span className="text-lg font-semibold tabular-nums text-white">
+                      {ms.targetDate.split(" ")[1]}
+                    </span>
+                  </div>
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-white truncate">{ms.name}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div
+                        className="h-1.5 w-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: ms.workstreamColor }}
+                      />
+                      <span className="text-[11px] text-slate-500">
+                        {ms.workstream}
+                      </span>
+                      <span
+                        className={`text-[10px] uppercase tracking-wider font-semibold ${
+                          ms.status === "at_risk"
+                            ? "text-amber-400"
+                            : ms.status === "in_progress"
+                              ? "text-[#b4c5ff]"
+                              : "text-slate-500"
+                        }`}
+                      >
+                        {ms.status.replace("_", " ")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Chevron */}
+                  <span className="material-symbols-outlined text-slate-600 text-lg shrink-0">
+                    chevron_right
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── Next Decision Gate (if any) ──────────────────────── */}
+      {nextGate && (
+        <section className="rounded-lg bg-[#131b2d] border border-[#dfc299]/20 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="material-symbols-outlined text-[#dfc299] text-lg">
+              door_front
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              Next Decision Gate
             </span>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <div className="flex items-baseline justify-between">
+            <div>
+              <p className="text-lg text-white">{nextGate.name}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5 tabular-nums">
+                Day {nextGate.dayNumber} &middot; Target {nextGate.targetDate}
+              </p>
+            </div>
+            <span className="text-[10px] uppercase tracking-wider text-[#dfc299] font-semibold">
+              {nextGate.status}
+            </span>
+          </div>
+        </section>
+      )}
+    </div>
   );
 }

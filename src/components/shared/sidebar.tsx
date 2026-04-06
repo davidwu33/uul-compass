@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navItems } from "./nav-items";
+import { getNavBySection } from "./nav-items";
 import { Compass } from "lucide-react";
+import { getCurrentDay } from "@/lib/data";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const dayNumber = 2;
+  const dayNumber = getCurrentDay();
   const totalDays = 100;
   const pct = Math.round((dayNumber / totalDays) * 100);
 
@@ -28,19 +29,25 @@ export function Sidebar() {
       {/* Nav links */}
       <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
         <NavSection label="Main">
-          {navItems.slice(0, 2).map((item) => (
+          {getNavBySection("main").map((item) => (
+            <NavItem key={item.href} item={item} pathname={pathname} />
+          ))}
+        </NavSection>
+
+        <NavSection label="Tracking">
+          {getNavBySection("tracking").map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} />
           ))}
         </NavSection>
 
         <NavSection label="Operations">
-          {navItems.slice(2, 7).map((item) => (
+          {getNavBySection("operations").map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} />
           ))}
         </NavSection>
 
         <NavSection label="System">
-          {navItems.slice(7).map((item) => (
+          {getNavBySection("system").map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} />
           ))}
         </NavSection>

@@ -5,16 +5,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Calendar, AlertCircle } from "lucide-react";
 
-export interface TaskData {
-  id: string;
-  title: string;
-  status: "todo" | "in_progress" | "blocked" | "review" | "done";
-  priority: "critical" | "high" | "medium" | "low";
-  assignee?: { name: string; initials: string };
-  dueDate?: string;
-  workstream: string;
-  workstreamColor?: string;
-}
+// Re-export TaskData from the data layer for backward compat
+export type { TaskData } from "@/lib/data/types";
+import type { TaskData } from "@/lib/data/types";
 
 const priorityConfig = {
   critical: { label: "Critical", dot: "bg-red-500", badge: "bg-red-50 text-red-700 border-red-200", ring: "ring-red-500/20" },
@@ -57,6 +50,7 @@ export function TaskCard({ task }: { task: TaskData }) {
 
       {/* Title */}
       <p className="text-[13px] font-medium leading-snug mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+        <span className="font-mono text-[10px] text-muted-foreground/70 mr-1.5">{task.taskCode}</span>
         {task.title}
       </p>
 

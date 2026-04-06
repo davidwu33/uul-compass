@@ -1,6 +1,7 @@
 "use client";
 
-import { TaskCard, type TaskData } from "./task-card";
+import { TaskCard } from "./task-card";
+import type { TaskData } from "@/lib/data/types";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
