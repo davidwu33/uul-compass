@@ -3,14 +3,11 @@
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n/context";
-import { logoutAction } from "@/lib/actions/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuGroup,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -94,24 +91,12 @@ export function TopNav({ user }: { user: UserProps }) {
             {user ? makeInitials(user.fullName) : <span className="material-symbols-outlined text-base">account_circle</span>}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52 bg-slate-900 border-slate-800">
-            {user && (
-              <DropdownMenuGroup>
-                <DropdownMenuLabel className="pb-1">
-                  <p className="text-sm font-semibold text-slate-200">{user.fullName}</p>
-                  <p className="text-xs text-slate-500 font-normal">{user.email}</p>
-                  <p className="text-[10px] text-slate-600 uppercase tracking-wider mt-0.5">{user.role}</p>
-                </DropdownMenuLabel>
-              </DropdownMenuGroup>
-            )}
-            <DropdownMenuSeparator className="bg-slate-800" />
             <DropdownMenuGroup>
-              <DropdownMenuItem
-                className="text-red-400 hover:text-red-300 focus:text-red-300 focus:bg-red-950/30 cursor-pointer"
-                onSelect={() => logoutAction()}
-              >
-                <span className="material-symbols-outlined text-base mr-2">logout</span>
-                Log out
-              </DropdownMenuItem>
+              <DropdownMenuLabel className="pb-1">
+                <p className="text-sm font-semibold text-slate-200">{user?.fullName ?? "—"}</p>
+                <p className="text-xs text-slate-500 font-normal">{user?.email ?? ""}</p>
+                <p className="text-[10px] text-slate-600 uppercase tracking-wider mt-0.5">{user?.role ?? ""}</p>
+              </DropdownMenuLabel>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
