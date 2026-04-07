@@ -112,6 +112,8 @@ export const getTasks = cache(async (): Promise<TaskData[]> => {
         milestoneId: pmiTasks.milestoneId,
         isCrossOffice: pmiTasks.isCrossOffice,
         sortOrder: pmiTasks.sortOrder,
+        workstreamId: pmiTasks.workstreamId,
+        assigneeId: pmiTasks.assigneeId,
       },
       ws: {
         name: pmiWorkstreams.name,
@@ -136,8 +138,11 @@ export const getTasks = cache(async (): Promise<TaskData[]> => {
     assignee: u
       ? { name: u.fullName, initials: makeInitials(u.fullName) }
       : undefined,
+    assigneeId: t.assigneeId ?? undefined,
     dueDate: t.dueDate ? formatDueDate(t.dueDate) : undefined,
+    dueDateRaw: t.dueDate ?? undefined,
     workstream: ws?.name ?? "",
+    workstreamId: t.workstreamId,
     workstreamColor: ws?.color ?? undefined,
     phase: (t.phase ?? 1) as 1 | 2 | 3,
     milestoneId: t.milestoneId ?? undefined,
@@ -410,6 +415,16 @@ export function getAllMetrics() {
 
 export function getFinancialPulse() {
   return demoFinancialPulse;
+}
+
+export type UserOption = { id: string; fullName: string };
+
+export async function getUsers(): Promise<UserOption[]> {
+  return db
+    .select({ id: users.id, fullName: users.fullName })
+    .from(users)
+    .where(eq(users.isActive, true))
+    .orderBy(asc(users.fullName));
 }
 
 export function getSalesData() {

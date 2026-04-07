@@ -1,15 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import type {
   TaskData,
   WorkstreamData,
   PhaseData,
   DecisionGate,
   MilestoneData,
+  UserOption,
 } from "@/lib/data";
+import type { CurrentUser } from "@/lib/supabase/get-current-user";
 import { useLanguage } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import { TaskModal } from "@/components/task-modal";
+import { updateTaskStatus } from "@/lib/actions/tasks";
+import type { TaskStatus } from "@/lib/actions/tasks";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const WORKSTREAM_KEYS: Record<string, TranslationKey> = {
   "Finance": "ws_Finance",
@@ -31,27 +42,29 @@ interface PlanContentProps {
   totalTasks: number;
   doneTasks: number;
   directivesPct: number;
+  currentUser: CurrentUser | null;
+  userOptions: UserOption[];
 }
 
-const STATUS_CONFIG: Record<string, { color: string; icon: string; key: "status_blocked" | "status_inProgress" | "status_todo" | "status_done" }> = {
-  blocked: { color: "text-red-400", icon: "block", key: "status_blocked" },
-  in_progress: { color: "text-[#b4c5ff]", icon: "play_circle", key: "status_inProgress" },
-  todo: { color: "text-slate-500", icon: "circle", key: "status_todo" },
-  done: { color: "text-emerald-400", icon: "check_circle", key: "status_done" },
+const STATUS_CONFIG: Record<string, { color: string; icon: string; label: string; key: "status_blocked" | "status_inProgress" | "status_todo" | "status_done" }> = {
+  blocked:     { color: "text-red-400",      icon: "block",        label: "Blocked",     key: "status_blocked" },
+  in_progress: { color: "text-[#b4c5ff]",   icon: "play_circle",  label: "In Progress", key: "status_inProgress" },
+  todo:        { color: "text-slate-500",    icon: "circle",       label: "To Do",       key: "status_todo" },
+  done:        { color: "text-emerald-400",  icon: "check_circle", label: "Done",        key: "status_done" },
+  review:      { color: "text-amber-400",    icon: "rate_review",  label: "Review",      key: "status_todo" },
 };
 
+const ALL_STATUSES: TaskStatus[] = ["todo", "in_progress", "review", "blocked", "done"];
+
 const PRIORITY_ORDER: Record<string, number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
+  critical: 0, high: 1, medium: 2, low: 3,
 };
 
 const PRIORITY_CONFIG: Record<string, { key: "priority_critical" | "priority_high" | "priority_medium" | "priority_low"; text: string; border: string; opacity: string }> = {
-  critical: { key: "priority_critical", text: "text-red-400", border: "border-red-400", opacity: "" },
-  high: { key: "priority_high", text: "text-amber-400", border: "border-amber-400", opacity: "" },
-  medium: { key: "priority_medium", text: "text-slate-400", border: "border-slate-600", opacity: "" },
-  low: { key: "priority_low", text: "text-slate-500", border: "border-slate-700", opacity: "opacity-70" },
+  critical: { key: "priority_critical", text: "text-red-400",    border: "border-red-400",    opacity: "" },
+  high:     { key: "priority_high",     text: "text-amber-400",  border: "border-amber-400",  opacity: "" },
+  medium:   { key: "priority_medium",   text: "text-slate-400",  border: "border-slate-600",  opacity: "" },
+  low:      { key: "priority_low",      text: "text-slate-500",  border: "border-slate-700",  opacity: "opacity-70" },
 };
 
 export function PlanContent({
@@ -63,11 +76,27 @@ export function PlanContent({
   totalTasks,
   doneTasks,
   directivesPct,
+  currentUser,
+  userOptions,
 }: PlanContentProps) {
   const [activePhaseNum, setActivePhaseNum] = useState<1 | 2 | 3>(1);
   const [activeWorkstream, setActiveWorkstream] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [viewMode, setViewMode] = useState<"board" | "list">("board");
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTask, setModalTask] = useState<TaskData | null>(null);
+
+  function openCreate() {
+    setModalTask(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(task: TaskData) {
+    setModalTask(task);
+    setModalOpen(true);
+  }
 
   // Filter by phase + workstream
   let filtered = tasks.filter((t) => t.phase === activePhaseNum);
@@ -75,26 +104,21 @@ export function PlanContent({
     filtered = filtered.filter((t) => t.workstream === activeWorkstream);
   }
 
-  // Separate done vs active
   const activeTasks = filtered.filter((t) => t.status !== "done");
   const doneTotalInPhase = filtered.filter((t) => t.status === "done");
 
-  // Group by priority, sort within each group by due date
   const priorityGroups = (["critical", "high", "medium", "low"] as const).map((priority) => {
     const groupTasks = activeTasks
       .filter((t) => t.priority === priority)
       .sort((a, b) => {
-        // Sort by due date, then by status (blocked first)
         const statusOrder: Record<string, number> = { blocked: 0, in_progress: 1, todo: 2 };
         const sa = statusOrder[a.status] ?? 9;
         const sb = statusOrder[b.status] ?? 9;
-        if (sa !== sb) return sa - sb;
-        return 0;
+        return sa - sb;
       });
     return { priority, tasks: groupTasks };
   }).filter((g) => g.tasks.length > 0);
 
-  // Status counts for current filter
   const statusCounts = filtered.reduce((acc, t) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
     return acc;
@@ -102,17 +126,29 @@ export function PlanContent({
 
   const activePhase = phases.find((p) => p.phaseNumber === activePhaseNum);
   const { t } = useLanguage();
+  const canWrite = currentUser?.isAdmin || currentUser?.isContributor;
 
   return (
     <div className="space-y-6">
       {/* ═══ Header ═══════════════════════════════════════════════ */}
-      <div>
-        <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-slate-100">
-          {t("plan_title")}
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          {totalTasks} {t("plan_subtitle_tasks")} &middot; {doneTasks} {t("plan_subtitle_completed")} ({directivesPct}%)
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-slate-100">
+            {t("plan_title")}
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            {totalTasks} {t("plan_subtitle_tasks")} &middot; {doneTasks} {t("plan_subtitle_completed")} ({directivesPct}%)
+          </p>
+        </div>
+        {canWrite && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-1.5 rounded-lg bg-[#1a2744] hover:bg-[#1f3060] border border-[#b4c5ff]/20 text-[#b4c5ff] text-xs font-medium px-4 py-2 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">add</span>
+            New Task
+          </button>
+        )}
       </div>
 
       {/* ═══ Phase Tabs ═══════════════════════════════════════════ */}
@@ -148,12 +184,9 @@ export function PlanContent({
           })}
         </div>
 
-        {/* Phase info bar */}
         {activePhase && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-slate-700/30">
-            <span className="text-[11px] text-slate-400">
-              {activePhase.subtitle}
-            </span>
+            <span className="text-[11px] text-slate-400">{activePhase.subtitle}</span>
             <span className="text-[11px] text-slate-500 tabular-nums">
               {t("plan_days")} {activePhase.startDay}–{activePhase.endDay} &middot; {activePhase.startDate} – {activePhase.endDate}
             </span>
@@ -197,20 +230,19 @@ export function PlanContent({
       {/* ═══ Status Summary + View Toggle ═════════════════════════ */}
       <div className="flex items-center justify-between">
         <div className="flex flex-wrap gap-3">
-        {(["blocked", "in_progress", "todo", "done"] as const).map((status) => {
-          const count = statusCounts[status] || 0;
-          const cfg = STATUS_CONFIG[status];
-          return (
-            <span key={status} className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-3 py-1.5 text-xs">
-              <span className={`material-symbols-outlined text-sm ${cfg.color}`}>{cfg.icon}</span>
-              <span className="tabular-nums font-medium text-white">{count}</span>
-              <span className="text-slate-500">{t(cfg.key)}</span>
-            </span>
-          );
-        })}
+          {(["blocked", "in_progress", "todo", "done"] as const).map((status) => {
+            const count = statusCounts[status] || 0;
+            const cfg = STATUS_CONFIG[status];
+            return (
+              <span key={status} className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-3 py-1.5 text-xs">
+                <span className={`material-symbols-outlined text-sm ${cfg.color}`}>{cfg.icon}</span>
+                <span className="tabular-nums font-medium text-white">{count}</span>
+                <span className="text-slate-500">{t(cfg.key)}</span>
+              </span>
+            );
+          })}
         </div>
 
-        {/* View toggle */}
         <div className="flex items-center gap-1 bg-[#131b2d] rounded-lg p-1">
           <button
             onClick={() => setViewMode("board")}
@@ -254,7 +286,7 @@ export function PlanContent({
 
                 <div className="space-y-2">
                   {columnTasks.map((task) => (
-                    <BoardCard key={task.id} task={task} />
+                    <BoardCard key={task.id} task={task} onEdit={openEdit} canWrite={!!canWrite} />
                   ))}
                   {columnTasks.length === 0 && (
                     <div className="rounded-lg bg-[#131b2d] p-4 text-center text-[11px] text-slate-600">
@@ -270,57 +302,54 @@ export function PlanContent({
 
       {/* ═══ List View (Priority-Grouped) ══════════════════════════ */}
       {viewMode === "list" && (
-      <div className="space-y-6">
-        {priorityGroups.map((group) => {
-          const cfg = PRIORITY_CONFIG[group.priority];
-          return (
-            <div key={group.priority}>
-              {/* Priority group header */}
-              <div className={`flex items-center gap-3 mb-3 border-l-2 ${cfg.border} pl-3`}>
-                <span className={`text-[10px] uppercase tracking-widest font-semibold ${cfg.text}`}>
-                  {t(cfg.key)}
-                </span>
-                <span className="text-[10px] text-slate-600 tabular-nums">{group.tasks.length}</span>
-              </div>
+        <div className="space-y-6">
+          {priorityGroups.map((group) => {
+            const cfg = PRIORITY_CONFIG[group.priority];
+            return (
+              <div key={group.priority}>
+                <div className={`flex items-center gap-3 mb-3 border-l-2 ${cfg.border} pl-3`}>
+                  <span className={`text-[10px] uppercase tracking-widest font-semibold ${cfg.text}`}>
+                    {t(cfg.key)}
+                  </span>
+                  <span className="text-[10px] text-slate-600 tabular-nums">{group.tasks.length}</span>
+                </div>
 
-              {/* Tasks */}
-              <div className={`space-y-1.5 ${cfg.opacity}`}>
-                {group.tasks.map((task) => (
-                  <TaskRow key={task.id} task={task} />
-                ))}
+                <div className={`space-y-1.5 ${cfg.opacity}`}>
+                  {group.tasks.map((task) => (
+                    <TaskRow key={task.id} task={task} onEdit={openEdit} canWrite={!!canWrite} />
+                  ))}
+                </div>
               </div>
+            );
+          })}
+
+          {priorityGroups.length === 0 && doneTotalInPhase.length === 0 && (
+            <div className="rounded-lg bg-[#131b2d] p-8 text-center text-sm text-slate-500">
+              {t("plan_noTasks")}{activeWorkstream ? ` ${t("plan_noTasksFor")} ${activeWorkstream}` : ""}.
             </div>
-          );
-        })}
+          )}
 
-        {priorityGroups.length === 0 && doneTotalInPhase.length === 0 && (
-          <div className="rounded-lg bg-[#131b2d] p-8 text-center text-sm text-slate-500">
-            {t("plan_noTasks")}{activeWorkstream ? ` ${t("plan_noTasksFor")} ${activeWorkstream}` : ""}.
-          </div>
-        )}
-
-        {/* Completed section (collapsed by default) */}
-        {doneTotalInPhase.length > 0 && (
-          <div className="pt-4">
-            <button
-              onClick={() => setShowDone(!showDone)}
-              className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <span className="material-symbols-outlined text-sm">
-                {showDone ? "expand_less" : "expand_more"}
-              </span>
-              {doneTotalInPhase.length} {t("plan_completedCount")}
-            </button>
-            {showDone && (
-              <div className="space-y-1.5 mt-2 opacity-50">
-                {doneTotalInPhase.map((task) => (
-                  <TaskRow key={task.id} task={task} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+          {doneTotalInPhase.length > 0 && (
+            <div className="pt-4">
+              <button
+                onClick={() => setShowDone(!showDone)}
+                className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">
+                  {showDone ? "expand_less" : "expand_more"}
+                </span>
+                {doneTotalInPhase.length} {t("plan_completedCount")}
+              </button>
+              {showDone && (
+                <div className="space-y-1.5 mt-2 opacity-50">
+                  {doneTotalInPhase.map((task) => (
+                    <TaskRow key={task.id} task={task} onEdit={openEdit} canWrite={!!canWrite} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ═══ Decision Gates ═══════════════════════════════════════ */}
@@ -363,21 +392,91 @@ export function PlanContent({
           </div>
         );
       })()}
+
+      {/* ═══ Task Modal ═══════════════════════════════════════════ */}
+      {currentUser && (
+        <TaskModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          task={modalTask}
+          workstreams={workstreams}
+          userOptions={userOptions}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 }
 
-// ─── Task Row ───────────────────────────────────────────────────
-function TaskRow({ task }: { task: TaskData }) {
-  const cfg = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo;
-  const isDone = task.status === "done";
-  const { t } = useLanguage();
+// ─── Status Dropdown ────────────────────────────────────────────
+function StatusDropdown({
+  task,
+  canWrite,
+}: {
+  task: TaskData;
+  canWrite: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const cfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.todo;
 
-  return (
-    <div className="flex items-center gap-3 rounded-lg bg-[#131b2d] px-4 py-3 hover:bg-[#171f32] transition-colors">
+  if (!canWrite) {
+    return (
       <span className={`material-symbols-outlined text-base shrink-0 ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
         {cfg.icon}
       </span>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        onClick={(e) => e.stopPropagation()}
+        disabled={pending}
+        className="shrink-0 focus:outline-none bg-transparent border-0 p-0 cursor-pointer"
+      >
+        <span className={`material-symbols-outlined text-base ${cfg.color} hover:opacity-70 transition-opacity`} style={{ fontVariationSettings: "'FILL' 1" }}>
+          {cfg.icon}
+        </span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="w-36">
+        {ALL_STATUSES.map((s) => {
+          const scfg = STATUS_CONFIG[s];
+          return (
+            <DropdownMenuItem
+              key={s}
+              className={`text-xs gap-2 ${task.status === s ? "font-semibold" : ""}`}
+              onSelect={() => {
+                startTransition(() => updateTaskStatus(task.id, s));
+              }}
+            >
+              <span className={`material-symbols-outlined text-sm ${scfg.color}`}>{scfg.icon}</span>
+              {scfg.label}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// ─── Task Row ───────────────────────────────────────────────────
+function TaskRow({
+  task,
+  onEdit,
+  canWrite,
+}: {
+  task: TaskData;
+  onEdit: (t: TaskData) => void;
+  canWrite: boolean;
+}) {
+  const isDone = task.status === "done";
+
+  return (
+    <div
+      onClick={() => onEdit(task)}
+      className="flex items-center gap-3 rounded-lg bg-[#131b2d] px-4 py-3 hover:bg-[#171f32] transition-colors cursor-pointer"
+    >
+      <StatusDropdown task={task} canWrite={canWrite} />
       <span className={`text-[11px] shrink-0 w-16 truncate ${isDone ? "text-slate-600" : "text-slate-400"}`}>
         {task.assignee?.name.split(" ")[0] || "—"}
       </span>
@@ -391,38 +490,48 @@ function TaskRow({ task }: { task: TaskData }) {
         </span>
       </div>
       {(task.status === "blocked" || task.status === "in_progress") && (
-        <span className={`text-[9px] uppercase tracking-wider font-semibold shrink-0 ${cfg.color}`}>
-          {t(cfg.key)}
+        <span className={`text-[9px] uppercase tracking-wider font-semibold shrink-0 ${STATUS_CONFIG[task.status]?.color}`}>
+          {STATUS_CONFIG[task.status]?.label}
         </span>
       )}
       {task.isCrossOffice && (
-        <span className="text-[9px] uppercase tracking-wider text-[#dfc299]/60 shrink-0">
-          {t("plan_crossOffice")}
-        </span>
+        <span className="text-[9px] uppercase tracking-wider text-[#dfc299]/60 shrink-0">Cross</span>
       )}
     </div>
   );
 }
 
 // ─── Board Card (Kanban) ────────────────────────────────────────
-function BoardCard({ task }: { task: TaskData }) {
+function BoardCard({
+  task,
+  onEdit,
+  canWrite,
+}: {
+  task: TaskData;
+  onEdit: (t: TaskData) => void;
+  canWrite: boolean;
+}) {
   const isCritical = task.priority === "critical";
   const isHigh = task.priority === "high";
   const isDone = task.status === "done";
   const { t } = useLanguage();
 
   return (
-    <div className={`rounded-lg bg-[#131b2d] p-3 border border-slate-700/30 ${
-      isCritical ? "border-l-2 border-l-red-400" :
-      isHigh ? "border-l-2 border-l-amber-400" : ""
-    }`}>
+    <div
+      onClick={() => onEdit(task)}
+      className={`rounded-lg bg-[#131b2d] p-3 border border-slate-700/30 cursor-pointer hover:bg-[#171f32] transition-colors ${
+        isCritical ? "border-l-2 border-l-red-400" :
+        isHigh ? "border-l-2 border-l-amber-400" : ""
+      }`}
+    >
       <div className="flex items-center gap-2 mb-1.5">
+        <StatusDropdown task={task} canWrite={canWrite} />
         <span className="text-[10px] font-mono text-slate-600">{task.taskCode}</span>
         {isCritical && (
           <span className="text-[9px] uppercase tracking-wider text-red-400 font-semibold">{t("priority_critical")}</span>
         )}
         {task.isCrossOffice && (
-          <span className="text-[9px] uppercase tracking-wider text-[#dfc299]/60">{t("plan_crossOffice")}</span>
+          <span className="text-[9px] uppercase tracking-wider text-[#dfc299]/60">Cross</span>
         )}
       </div>
       <p className={`text-[12px] leading-snug mb-2 ${isDone ? "line-through text-slate-600" : "text-slate-200"}`}>

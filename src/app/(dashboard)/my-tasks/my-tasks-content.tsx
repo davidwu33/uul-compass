@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { TaskData } from "@/lib/data/types";
+import type { TaskData, WorkstreamData, UserOption } from "@/lib/data";
+import type { CurrentUser } from "@/lib/supabase/get-current-user";
 import { useLanguage } from "@/lib/i18n/context";
+import { TaskModal } from "@/components/task-modal";
 
 const PRIORITY_ORDER: Record<string, number> = {
   critical: 0,
@@ -153,10 +155,13 @@ function AssigneeAvatar({ assignee }: { assignee: TaskData["assignee"] }) {
 
 // ─── Card variants ────────────────────────────────────────────
 
-function OverdueCard({ task }: { task: TaskData }) {
+function OverdueCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => void }) {
   const { t } = useLanguage();
   return (
-    <div className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4">
+    <div
+      onClick={() => onEdit(task)}
+      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 cursor-pointer hover:bg-[#171f32] transition-colors"
+    >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-red-500" />
       <TaskCode code={task.taskCode} />
       <div className="flex-1 min-w-0">
@@ -173,17 +178,20 @@ function OverdueCard({ task }: { task: TaskData }) {
           <StatusDot status={task.status} />
         </div>
       </div>
-      <button className="shrink-0 rounded bg-red-500/20 border border-red-500/40 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-300 hover:bg-red-500/30 transition-colors">
+      <span className="shrink-0 rounded bg-red-500/20 border border-red-500/40 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-300">
         {t("tasks_execute")}
-      </button>
+      </span>
     </div>
   );
 }
 
-function WeekCard({ task }: { task: TaskData }) {
+function WeekCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => void }) {
   const { t } = useLanguage();
   return (
-    <div className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4">
+    <div
+      onClick={() => onEdit(task)}
+      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 cursor-pointer hover:bg-[#171f32] transition-colors"
+    >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-blue-500" />
       <TaskCode code={task.taskCode} />
       <div className="flex-1 min-w-0">
@@ -203,18 +211,21 @@ function WeekCard({ task }: { task: TaskData }) {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <AssigneeAvatar assignee={task.assignee} />
-        <button className="rounded bg-[#b4c5ff]/15 border border-[#b4c5ff]/30 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#b4c5ff] hover:bg-[#b4c5ff]/25 transition-colors">
+        <span className="rounded bg-[#b4c5ff]/15 border border-[#b4c5ff]/30 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#b4c5ff]">
           {t("tasks_execute")}
-        </button>
+        </span>
       </div>
     </div>
   );
 }
 
-function LaterCard({ task }: { task: TaskData }) {
+function LaterCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => void }) {
   const { t } = useLanguage();
   return (
-    <div className="relative rounded-lg bg-[#131b2d]/60 p-4 pl-6 flex items-center gap-4">
+    <div
+      onClick={() => onEdit(task)}
+      className="relative rounded-lg bg-[#131b2d]/60 p-4 pl-6 flex items-center gap-4 cursor-pointer hover:bg-[#171f32]/60 transition-colors"
+    >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-slate-600" />
       <TaskCode code={task.taskCode} />
       <div className="flex-1 min-w-0">
@@ -300,10 +311,23 @@ function CollapsibleSection({
 
 // ─── Main content ─────────────────────────────────────────────
 
-export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
+interface MyTasksContentProps {
+  tasks: TaskData[];
+  currentUser: CurrentUser | null;
+  workstreams: WorkstreamData[];
+  userOptions: UserOption[];
+}
+
+export function MyTasksContent({ tasks, currentUser, workstreams, userOptions }: MyTasksContentProps) {
   const { overdue, thisWeek, later, completed } = groupTasks(tasks);
   const activeTasks = tasks.filter((t) => t.status !== "done");
   const { t } = useLanguage();
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTask, setModalTask] = useState<TaskData | null>(null);
+
+  function openCreate() { setModalTask(null); setModalOpen(true); }
+  function openEdit(task: TaskData) { setModalTask(task); setModalOpen(true); }
 
   return (
     <div className="space-y-10">
@@ -337,7 +361,7 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
         badgeText={`${overdue.length} ${t("tasks_actionsRequired")}`}
         badgeColor="bg-red-500/20 text-red-400"
       >
-        {overdue.map((task) => <OverdueCard key={task.id} task={task} />)}
+        {overdue.map((task) => <OverdueCard key={task.id} task={task} onEdit={openEdit} />)}
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -348,7 +372,7 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
         badgeText={`${thisWeek.length}`}
         badgeColor="bg-[#b4c5ff]/15 text-[#b4c5ff]"
       >
-        {thisWeek.map((task) => <WeekCard key={task.id} task={task} />)}
+        {thisWeek.map((task) => <WeekCard key={task.id} task={task} onEdit={openEdit} />)}
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -361,7 +385,7 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
         defaultOpen={false}
         opacity="opacity-60 hover:opacity-100 transition-opacity"
       >
-        {later.map((task) => <LaterCard key={task.id} task={task} />)}
+        {later.map((task) => <LaterCard key={task.id} task={task} onEdit={openEdit} />)}
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -385,9 +409,23 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
         </div>
       )}
 
-      <button className="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-[#b4c5ff] text-[#0a0f1c] shadow-lg shadow-[#b4c5ff]/20 flex items-center justify-center hover:bg-[#c5d4ff] transition-colors z-50">
+      <button
+        onClick={openCreate}
+        className="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-[#b4c5ff] text-[#0a0f1c] shadow-lg shadow-[#b4c5ff]/20 flex items-center justify-center hover:bg-[#c5d4ff] transition-colors z-50"
+      >
         <span className="material-symbols-outlined text-2xl">add_task</span>
       </button>
+
+      {currentUser && (
+        <TaskModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          task={modalTask}
+          workstreams={workstreams}
+          userOptions={userOptions}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 }

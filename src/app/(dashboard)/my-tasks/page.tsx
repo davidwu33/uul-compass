@@ -1,10 +1,25 @@
-import { getTasksByAssignee } from "@/lib/data";
+import { getTasks, getWorkstreams, getUsers } from "@/lib/data";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { MyTasksContent } from "./my-tasks-content";
 
-// TODO: replace with session user once auth is wired
-const CURRENT_USER = "Jerry Shi";
-
 export default async function MyTasksPage() {
-  const tasks = await getTasksByAssignee(CURRENT_USER);
-  return <MyTasksContent tasks={tasks} />;
+  const [currentUser, allTasks, workstreams, userOptions] = await Promise.all([
+    getCurrentUser(),
+    getTasks(),
+    getWorkstreams(),
+    getUsers(),
+  ]);
+
+  const tasks = currentUser
+    ? allTasks.filter((t) => t.assigneeId === currentUser.id)
+    : [];
+
+  return (
+    <MyTasksContent
+      tasks={tasks}
+      currentUser={currentUser}
+      workstreams={workstreams}
+      userOptions={userOptions}
+    />
+  );
 }

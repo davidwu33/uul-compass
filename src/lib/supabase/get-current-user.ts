@@ -9,6 +9,8 @@ export type CurrentUser = {
   email: string;
   fullName: string;
   role: string;
+  isAdmin: boolean;       // owner | board | executive — can edit everything
+  isContributor: boolean; // dept heads, managers, operators, etc — can edit own tasks
 };
 
 /**
@@ -36,21 +38,22 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   if (!row || !row.authId) return null;
 
+  const isAdmin = ADMIN_ROLES.has(row.role);
+  const isContributor = CONTRIBUTOR_ROLES.has(row.role);
+
   return {
     id: row.id,
     authId: row.authId,
     email: row.email,
     fullName: row.fullName,
     role: row.role,
+    isAdmin,
+    isContributor,
   };
 }
 
-/**
- * Role check helpers — use in Server Actions before any write.
- * "admin" roles can edit everything; others can only edit their own items.
- */
-const ADMIN_ROLES = new Set(["owner", "board"]);
-
-export function isAdmin(role: string): boolean {
-  return ADMIN_ROLES.has(role);
-}
+const ADMIN_ROLES = new Set(["owner", "board", "executive"]);
+const CONTRIBUTOR_ROLES = new Set([
+  "department_head", "manager", "operator",
+  "sales", "finance", "compliance",
+]);

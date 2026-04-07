@@ -27,8 +27,11 @@ export interface TaskData {
   status: "todo" | "in_progress" | "blocked" | "review" | "done";
   priority: "critical" | "high" | "medium" | "low";
   assignee?: { name: string; initials: string; office?: string };
-  dueDate?: string;
+  assigneeId?: string;
+  dueDate?: string;      // formatted display: "Apr 7"
+  dueDateRaw?: string;   // ISO for form input: "2026-04-07"
   workstream: string;
+  workstreamId?: string;
   workstreamColor?: string;
   phase: 1 | 2 | 3;
   milestoneId?: string;
