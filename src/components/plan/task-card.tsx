@@ -4,6 +4,23 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, formatDueDate, isOverdue } from "@/lib/utils";
 import { Calendar, AlertCircle } from "lucide-react";
+import { updateTaskStatus, type TaskStatus } from "@/lib/actions/tasks";
+
+const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
+  todo: "in_progress",
+  in_progress: "review",
+  review: "done",
+  done: "todo",
+  blocked: "in_progress",
+};
+
+const STATUS_ICON: Record<TaskStatus, string> = {
+  todo: "○",
+  in_progress: "◑",
+  review: "◕",
+  done: "●",
+  blocked: "✕",
+};
 
 // Re-export TaskData from the data layer for backward compat
 export type { TaskData } from "@/lib/data/types";
@@ -21,6 +38,7 @@ export function TaskCard({ task }: { task: TaskData }) {
   const displayDate = formatDueDate(task.dueDate);
   const p = priorityConfig[task.priority];
   const isCritical = task.priority === "critical";
+  const nextStatus = STATUS_CYCLE[task.status];
 
   return (
     <div className={cn(
@@ -74,13 +92,30 @@ export function TaskCard({ task }: { task: TaskData }) {
             </span>
           )}
         </div>
-        {task.assignee && (
-          <Avatar className="h-6 w-6 shrink-0 ring-1 ring-border/50">
-            <AvatarFallback className="text-[9px] font-semibold bg-primary/8 text-primary">
-              {task.assignee.initials}
-            </AvatarFallback>
-          </Avatar>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {task.assignee && (
+            <Avatar className="h-6 w-6 ring-1 ring-border/50">
+              <AvatarFallback className="text-[9px] font-semibold bg-primary/8 text-primary">
+                {task.assignee.initials}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              updateTaskStatus(task.id, nextStatus);
+            }}
+            title={`Mark as ${nextStatus.replace("_", " ")}`}
+            className={cn(
+              "h-6 w-6 rounded flex items-center justify-center text-[11px] font-mono transition-colors",
+              task.status === "done"
+                ? "text-emerald-500 hover:text-muted-foreground"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+            )}
+          >
+            {STATUS_ICON[task.status]}
+          </button>
+        </div>
       </div>
     </div>
   );

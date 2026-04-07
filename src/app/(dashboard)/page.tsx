@@ -29,15 +29,17 @@ const TREND_ICONS: Record<string, { icon: string; color: string }> = {
   flat: { icon: "trending_flat", color: "text-slate-500" },
 };
 
-export default function DashboardPage() {
-  const stats = getTaskStats();
-  const phases = getPhases();
-  const gates = getGates();
+export default async function DashboardPage() {
+  const [stats, phases, gates, attentionTasks, decisions, currentDay] = await Promise.all([
+    getTaskStats(),
+    getPhases(),
+    getGates(),
+    getNeedsAttention(),
+    getUpcomingDecisions(),
+    getCurrentDay(),
+  ]);
   const pillars = getPillarScorecard();
   const financialPulse = getFinancialPulse();
-  const attentionTasks = getNeedsAttention();
-  const decisions = getUpcomingDecisions();
-  const currentDay = getCurrentDay();
   const completionPct =
     stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
   const daysRemaining = Math.max(0, 100 - currentDay);

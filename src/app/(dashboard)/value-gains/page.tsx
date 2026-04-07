@@ -84,9 +84,11 @@ const growthPriorities = [
   },
 ];
 
-export default function GrowthPage() {
-  const initiatives = getValueInitiatives();
-  const snapshots = getValueSnapshots();
+export default async function GrowthPage() {
+  const [initiatives, snapshots] = await Promise.all([
+    getValueInitiatives(),
+    getValueSnapshots(),
+  ]);
 
   const totalPlanned = initiatives.reduce((s, i) => s + i.plannedImpact, 0);
   const totalCaptured = initiatives.reduce((s, i) => s + i.capturedImpact, 0);

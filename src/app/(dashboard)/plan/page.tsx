@@ -8,17 +8,19 @@ import {
 } from "@/lib/data";
 import { PlanContent } from "./plan-content";
 
-export default function PlanPage() {
-  const tasks = getTasks();
-  const workstreams = getWorkstreams();
-  const phases = getPhases();
-  const gates = getGates();
-  const milestones = getMilestones();
-  const currentDay = getCurrentDay();
+export default async function PlanPage() {
+  const [tasks, workstreams, phases, gates, milestones, currentDay] = await Promise.all([
+    getTasks(),
+    getWorkstreams(),
+    getPhases(),
+    getGates(),
+    getMilestones(),
+    getCurrentDay(),
+  ]);
 
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.status === "done").length;
-  const directivesPct = Math.round((doneTasks / totalTasks) * 100);
+  const directivesPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
   return (
     <PlanContent

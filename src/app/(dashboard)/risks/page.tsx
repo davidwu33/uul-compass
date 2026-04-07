@@ -34,9 +34,8 @@ const taskStatusConfig: Record<string, { color: string; icon: string }> = {
   done: { color: "text-emerald-400", icon: "check_circle" },
 };
 
-export default function RisksPage() {
-  const risks = getRisks();
-  const linkedTasksMap = getLinkedTasksMap();
+export default async function RisksPage() {
+  const [risks, linkedTasksMap] = await Promise.all([getRisks(), getLinkedTasksMap()]);
 
   const sorted = [...risks].sort(
     (a, b) => severityOrder[a.severity] - severityOrder[b.severity]
