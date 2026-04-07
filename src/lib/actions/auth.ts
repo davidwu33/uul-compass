@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 async function linkAuthId(userId: string, authUserId: string, currentAuthId: string | null) {
@@ -24,7 +24,7 @@ export async function loginAction(email: string, password: string): Promise<{ er
   const [user] = await db
     .select({ id: users.id, authId: users.authId })
     .from(users)
-    .where(eq(users.email, email))
+    .where(eq(sql`lower(${users.email})`, email.trim().toLowerCase()))
     .limit(1);
 
   if (!user) {
@@ -44,7 +44,7 @@ export async function signUpAction(email: string, password: string): Promise<{ e
   const [user] = await db
     .select({ id: users.id, authId: users.authId })
     .from(users)
-    .where(eq(users.email, email))
+    .where(eq(sql`lower(${users.email})`, email.trim().toLowerCase()))
     .limit(1);
 
   if (!user) {
