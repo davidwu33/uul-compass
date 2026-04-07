@@ -27,6 +27,7 @@ import { demoValueInitiatives, demoValueSnapshots } from "./demo/value-gains";
 import { demoScorecard, demoPillarScorecard, demoAllMetrics, demoFinancialPulse } from "./demo/metrics";
 import { compassConfig } from "./config";
 import { isOverdue, calcDayNumber } from "@/lib/utils";
+import type { WorkstreamData } from "./types";
 
 // ─── Getters ───────────────────────────────────────────────────
 
@@ -47,11 +48,25 @@ export function getTasksByWorkstream(workstream: string) {
 }
 
 export function getMilestones() {
-  return demoMilestones;
+  return demoMilestones.map((m) => {
+    const linked = demoTasks.filter((t) => t.milestoneId === m.id);
+    return {
+      ...m,
+      linkedTaskCount: linked.length,
+      completedTaskCount: linked.filter((t) => t.status === "done").length,
+    };
+  });
 }
 
-export function getWorkstreams() {
-  return demoWorkstreams;
+export function getWorkstreams(): WorkstreamData[] {
+  return demoWorkstreams.map((ws) => {
+    const wsTasks = demoTasks.filter((t) => t.workstream === ws.name);
+    return {
+      ...ws,
+      taskCount: wsTasks.length,
+      completed: wsTasks.filter((t) => t.status === "done").length,
+    };
+  });
 }
 
 export function getPhases() {
@@ -93,13 +108,13 @@ export function getAllMetrics() {
 export function getTasksForRisk(riskId: string) {
   const risk = demoRisks.find((r) => r.id === riskId);
   if (!risk) return [];
-  return demoTasks.filter((t) => risk.linkedTaskIds.includes(t.id));
+  return demoTasks.filter((t) => risk.linkedTaskCodes.includes(t.id));
 }
 
 export function getLinkedTasksMap() {
   const map: Record<string, typeof demoTasks> = {};
   for (const risk of demoRisks) {
-    map[risk.id] = demoTasks.filter((t) => risk.linkedTaskIds.includes(t.id));
+    map[risk.id] = demoTasks.filter((t) => risk.linkedTaskCodes.includes(t.id));
   }
   return map;
 }

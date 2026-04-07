@@ -4,6 +4,7 @@ import {
   varchar,
   text,
   integer,
+  boolean,
   date,
   timestamp,
   jsonb,
@@ -16,9 +17,10 @@ export const pmiWorkstreams = pgTable("pmi_workstreams", {
   id: uuid().defaultRandom().primaryKey(),
   name: varchar({ length: 255 }).notNull(),
   description: text(),
+  color: varchar({ length: 20 }),
   departmentId: uuid("department_id").references(() => departments.id),
   ownerId: uuid("owner_id").references(() => users.id),
-  color: varchar({ length: 20 }),
+  targetCompletion: integer("target_completion").default(0), // expected % done by current day
   sortOrder: integer("sort_order").default(0),
   status: pmiStatusEnum().default("not_started").notNull(),
   startDate: date("start_date"),
@@ -33,8 +35,10 @@ export const pmiMilestones = pgTable("pmi_milestones", {
   workstreamId: uuid("workstream_id")
     .references(() => pmiWorkstreams.id)
     .notNull(),
+  code: varchar({ length: 20 }),          // e.g. "F-M1", "O-M2"
   name: varchar({ length: 255 }).notNull(),
   description: text(),
+  phase: integer().default(1).notNull(),   // 1, 2, or 3
   targetDate: date("target_date"),
   completedDate: date("completed_date"),
   status: pmiStatusEnum().default("not_started").notNull(),
@@ -50,6 +54,9 @@ export const pmiTasks = pgTable("pmi_tasks", {
     .references(() => pmiWorkstreams.id)
     .notNull(),
   milestoneId: uuid("milestone_id").references(() => pmiMilestones.id),
+  taskCode: varchar("task_code", { length: 10 }),  // e.g. "F1", "O12", "T9"
+  phase: integer().default(1).notNull(),            // 1, 2, or 3
+  isCrossOffice: boolean("is_cross_office").default(false).notNull(),
   title: varchar({ length: 500 }).notNull(),
   description: text(),
   assigneeId: uuid("assignee_id").references(() => users.id),

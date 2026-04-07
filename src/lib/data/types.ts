@@ -82,7 +82,7 @@ export interface RiskData {
   owner: { name: string; initials: string };
   targetDate?: string;
   workstream?: string;
-  linkedTaskIds: string[];
+  linkedTaskCodes: string[]; // task codes e.g. ["F1", "O2"]
 }
 
 export interface ValueInitiative {

@@ -47,6 +47,7 @@ export const pmiDecisionGates = pgTable("pmi_decision_gates", {
   targetDay: integer("target_day").notNull(), // Day 14, 30, 45, etc.
   targetDate: date("target_date"),
   status: gateStatusEnum().default("upcoming").notNull(),
+  ownerLabel: varchar("owner_label", { length: 255 }), // e.g. "Jerry + David Wu"
   criteria: jsonb(), // Array of { criterion: string, met: boolean }
   decidedBy: uuid("decided_by").references(() => users.id),
   decidedAt: timestamp("decided_at", { withTimezone: true }),

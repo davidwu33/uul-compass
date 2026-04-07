@@ -20,6 +20,8 @@ export const risks = pgTable("risks", {
   mitigationPlan: text("mitigation_plan"),
   ownerId: uuid("owner_id").references(() => users.id),
   workstreamId: uuid("workstream_id").references(() => pmiWorkstreams.id),
+  // Stored as task codes (e.g. ["F1","O2"]) — resolved to UUIDs at query time
+  linkedTaskCodes: text("linked_task_codes").array(),
   raisedDate: date("raised_date"),
   targetDate: date("target_date"),
   resolvedDate: date("resolved_date"),
