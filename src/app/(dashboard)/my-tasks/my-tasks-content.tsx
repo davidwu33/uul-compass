@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { TaskData } from "@/lib/data/types";
+import { useLanguage } from "@/lib/i18n/context";
 
 const PRIORITY_ORDER: Record<string, number> = {
   critical: 0,
@@ -47,17 +48,17 @@ function isThisWeek(dateStr: string): boolean {
   return d >= now && d <= weekOut;
 }
 
-function relativeTime(dateStr: string): string {
+function relativeTime(dateStr: string, t: (k: Parameters<ReturnType<typeof useLanguage>["t"]>[0]) => string): string {
   const d = parseDate(dateStr);
   if (!d) return dateStr;
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Due today";
-  if (diffDays === 1) return "1 day overdue";
-  if (diffDays > 1) return `${diffDays} days overdue`;
-  if (diffDays === -1) return "Due tomorrow";
-  return `Due in ${Math.abs(diffDays)} days`;
+  if (diffDays === 0) return t("tasks_dueToday");
+  if (diffDays === 1) return t("tasks_oneDayOverdue");
+  if (diffDays > 1) return `${diffDays} ${t("tasks_daysOverdue")}`;
+  if (diffDays === -1) return t("tasks_dueTomorrow");
+  return `${t("tasks_dueIn")} ${Math.abs(diffDays)} ${t("tasks_days")}`;
 }
 
 // ─── Grouping ─────────────────────────────────────────────────
@@ -100,30 +101,33 @@ function TaskCode({ code }: { code: string }) {
 }
 
 function CrossOfficeBadge({ task }: { task: TaskData }) {
+  const { t } = useLanguage();
   if (!task.isCrossOffice) return null;
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-[#1e2a42] px-2.5 py-0.5 text-[10px] text-slate-400 uppercase tracking-wider">
       <span className="material-symbols-outlined text-xs">public</span>
-      Cross-Office
+      {t("tasks_crossOffice")}
     </span>
   );
 }
 
 function PriorityBadge({ priority }: { priority: string }) {
+  const { t } = useLanguage();
   if (priority !== "critical" && priority !== "high") return null;
   return (
     <span className="inline-flex items-center rounded-full bg-[#dfc299]/15 px-2.5 py-0.5 text-[10px] text-[#dfc299] font-semibold uppercase tracking-wider">
-      Priority
+      {t("tasks_priority")}
     </span>
   );
 }
 
 function StatusDot({ status }: { status: string }) {
+  const { t } = useLanguage();
   if (status === "in_progress") {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] text-blue-400">
         <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-        In Progress
+        {t("status_inProgress")}
       </span>
     );
   }
@@ -131,7 +135,7 @@ function StatusDot({ status }: { status: string }) {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] text-red-400">
         <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-        Blocked
+        {t("status_blocked")}
       </span>
     );
   }
@@ -150,6 +154,7 @@ function AssigneeAvatar({ assignee }: { assignee: TaskData["assignee"] }) {
 // ─── Card variants ────────────────────────────────────────────
 
 function OverdueCard({ task }: { task: TaskData }) {
+  const { t } = useLanguage();
   return (
     <div className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4">
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-red-500" />
@@ -162,20 +167,21 @@ function OverdueCard({ task }: { task: TaskData }) {
         <div className="flex items-center gap-3 mt-1">
           {task.dueDate && (
             <span className="text-[11px] text-red-400 tabular-nums">
-              {relativeTime(task.dueDate)}
+              {relativeTime(task.dueDate, t)}
             </span>
           )}
           <StatusDot status={task.status} />
         </div>
       </div>
       <button className="shrink-0 rounded bg-red-500/20 border border-red-500/40 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-300 hover:bg-red-500/30 transition-colors">
-        Execute
+        {t("tasks_execute")}
       </button>
     </div>
   );
 }
 
 function WeekCard({ task }: { task: TaskData }) {
+  const { t } = useLanguage();
   return (
     <div className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4">
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-blue-500" />
@@ -189,7 +195,7 @@ function WeekCard({ task }: { task: TaskData }) {
         <div className="flex items-center gap-3 mt-1">
           {task.dueDate && (
             <span className="text-[11px] text-slate-500 tabular-nums">
-              Due {task.dueDate}
+              {t("tasks_due")} {task.dueDate}
             </span>
           )}
           <StatusDot status={task.status} />
@@ -198,7 +204,7 @@ function WeekCard({ task }: { task: TaskData }) {
       <div className="flex items-center gap-2 shrink-0">
         <AssigneeAvatar assignee={task.assignee} />
         <button className="rounded bg-[#b4c5ff]/15 border border-[#b4c5ff]/30 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#b4c5ff] hover:bg-[#b4c5ff]/25 transition-colors">
-          Execute
+          {t("tasks_execute")}
         </button>
       </div>
     </div>
@@ -206,6 +212,7 @@ function WeekCard({ task }: { task: TaskData }) {
 }
 
 function LaterCard({ task }: { task: TaskData }) {
+  const { t } = useLanguage();
   return (
     <div className="relative rounded-lg bg-[#131b2d]/60 p-4 pl-6 flex items-center gap-4">
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-slate-600" />
@@ -218,7 +225,7 @@ function LaterCard({ task }: { task: TaskData }) {
         <div className="flex items-center gap-3 mt-1">
           {task.dueDate && (
             <span className="text-[11px] text-slate-500 tabular-nums">
-              Due {task.dueDate}
+              {t("tasks_due")} {task.dueDate}
             </span>
           )}
           <StatusDot status={task.status} />
@@ -296,6 +303,7 @@ function CollapsibleSection({
 export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
   const { overdue, thisWeek, later, completed } = groupTasks(tasks);
   const activeTasks = tasks.filter((t) => t.status !== "done");
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-10">
@@ -303,31 +311,30 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
       <section className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
         <div className="space-y-4">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-[#dfc299]">
-            Operator Queue
+            {t("tasks_operatorQueue")}
           </span>
           <h1 className="font-serif text-5xl font-light tracking-tight text-white leading-[1.1]">
-            Institutional Tasks
+            {t("tasks_title")}
           </h1>
           <p className="text-sm text-slate-400 max-w-md">
-            Personal directive queue. Overdue items require immediate action.
-            Scheduled items are sequenced by priority.
+            {t("tasks_queueDesc")}
           </p>
         </div>
         <div className="rounded-lg bg-[#131b2d] border-t-2 border-[#dfc299] px-6 py-4 text-center shrink-0">
-          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Active Queue</p>
+          <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">{t("tasks_activeQueue")}</p>
           <p className="font-serif text-4xl font-light tabular-nums text-white">
             {activeTasks.length}
           </p>
-          <p className="text-[10px] uppercase tracking-wider text-[#dfc299] mt-1">Directives</p>
+          <p className="text-[10px] uppercase tracking-wider text-[#dfc299] mt-1">{t("tasks_directives")}</p>
         </div>
       </section>
 
       <CollapsibleSection
         icon="error"
-        title="Overdue Priorities"
+        title={t("tasks_overduePriorities")}
         titleColor="text-red-400"
         count={overdue.length}
-        badgeText={`${overdue.length} ACTIONS REQUIRED`}
+        badgeText={`${overdue.length} ${t("tasks_actionsRequired")}`}
         badgeColor="bg-red-500/20 text-red-400"
       >
         {overdue.map((task) => <OverdueCard key={task.id} task={task} />)}
@@ -335,7 +342,7 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
 
       <CollapsibleSection
         icon="calendar_month"
-        title="Scheduled This Week"
+        title={t("tasks_scheduledThisWeek")}
         titleColor="text-blue-200"
         count={thisWeek.length}
         badgeText={`${thisWeek.length}`}
@@ -346,7 +353,7 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
 
       <CollapsibleSection
         icon="schedule"
-        title="Deferred &amp; Future"
+        title={t("tasks_deferredFuture")}
         titleColor="text-slate-400"
         count={later.length}
         badgeText={`${later.length}`}
@@ -359,7 +366,7 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
 
       <CollapsibleSection
         icon="check_circle"
-        title="Directive Archives"
+        title={t("tasks_directiveArchives")}
         titleColor="text-slate-500"
         count={completed.length}
         badgeText={`${completed.length}`}
@@ -373,8 +380,8 @@ export function MyTasksContent({ tasks }: { tasks: TaskData[] }) {
       {tasks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <span className="material-symbols-outlined text-5xl text-slate-600 mb-4">task_alt</span>
-          <p className="font-serif text-xl text-slate-400">No directives assigned</p>
-          <p className="text-sm text-slate-600 mt-1">Tasks assigned to you will appear here</p>
+          <p className="font-serif text-xl text-slate-400">{t("tasks_noDirectives")}</p>
+          <p className="text-sm text-slate-600 mt-1">{t("tasks_tasksWillAppear")}</p>
         </div>
       )}
 

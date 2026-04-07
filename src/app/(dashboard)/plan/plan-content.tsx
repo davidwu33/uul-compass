@@ -8,6 +8,7 @@ import type {
   DecisionGate,
   MilestoneData,
 } from "@/lib/data";
+import { useLanguage } from "@/lib/i18n/context";
 
 // ─── Props ───────────────────────────────────────────────────────
 interface PlanContentProps {
@@ -22,11 +23,11 @@ interface PlanContentProps {
   directivesPct: number;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  blocked: { label: "Blocked", color: "text-red-400", icon: "block" },
-  in_progress: { label: "In Progress", color: "text-[#b4c5ff]", icon: "play_circle" },
-  todo: { label: "To Do", color: "text-slate-500", icon: "circle" },
-  done: { label: "Done", color: "text-emerald-400", icon: "check_circle" },
+const STATUS_CONFIG: Record<string, { color: string; icon: string; key: "status_blocked" | "status_inProgress" | "status_todo" | "status_done" }> = {
+  blocked: { color: "text-red-400", icon: "block", key: "status_blocked" },
+  in_progress: { color: "text-[#b4c5ff]", icon: "play_circle", key: "status_inProgress" },
+  todo: { color: "text-slate-500", icon: "circle", key: "status_todo" },
+  done: { color: "text-emerald-400", icon: "check_circle", key: "status_done" },
 };
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -36,11 +37,11 @@ const PRIORITY_ORDER: Record<string, number> = {
   low: 3,
 };
 
-const PRIORITY_CONFIG: Record<string, { label: string; text: string; border: string; opacity: string }> = {
-  critical: { label: "Critical", text: "text-red-400", border: "border-red-400", opacity: "" },
-  high: { label: "High", text: "text-amber-400", border: "border-amber-400", opacity: "" },
-  medium: { label: "Medium", text: "text-slate-400", border: "border-slate-600", opacity: "" },
-  low: { label: "Low", text: "text-slate-500", border: "border-slate-700", opacity: "opacity-70" },
+const PRIORITY_CONFIG: Record<string, { key: "priority_critical" | "priority_high" | "priority_medium" | "priority_low"; text: string; border: string; opacity: string }> = {
+  critical: { key: "priority_critical", text: "text-red-400", border: "border-red-400", opacity: "" },
+  high: { key: "priority_high", text: "text-amber-400", border: "border-amber-400", opacity: "" },
+  medium: { key: "priority_medium", text: "text-slate-400", border: "border-slate-600", opacity: "" },
+  low: { key: "priority_low", text: "text-slate-500", border: "border-slate-700", opacity: "opacity-70" },
 };
 
 export function PlanContent({
@@ -90,16 +91,17 @@ export function PlanContent({
   }, {} as Record<string, number>);
 
   const activePhase = phases.find((p) => p.phaseNumber === activePhaseNum);
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-6">
       {/* ═══ Header ═══════════════════════════════════════════════ */}
       <div>
         <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-slate-100">
-          100-Day Plan
+          {t("plan_title")}
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          {totalTasks} tasks across 6 workstreams &middot; {doneTasks} completed ({directivesPct}%)
+          {totalTasks} {t("plan_subtitle_tasks")} &middot; {doneTasks} {t("plan_subtitle_completed")} ({directivesPct}%)
         </p>
       </div>
 
@@ -123,13 +125,13 @@ export function PlanContent({
                 <span className={`text-[10px] uppercase tracking-wider font-semibold ${
                   isSelected ? "text-[#b4c5ff]" : "text-slate-500"
                 }`}>
-                  Phase {phase.phaseNumber}
+                  {t("plan_phase")} {phase.phaseNumber}
                 </span>
                 <span className={`text-xs mt-0.5 ${isSelected ? "text-slate-300" : "text-slate-600"}`}>
                   {phase.name}
                 </span>
                 <span className="text-[10px] text-slate-600 mt-0.5 tabular-nums">
-                  {phaseDone}/{phaseTasks.length} done
+                  {phaseDone}/{phaseTasks.length} {t("plan_done")}
                 </span>
               </button>
             );
@@ -159,7 +161,7 @@ export function PlanContent({
               : "bg-[#131b2d] text-slate-400 hover:text-slate-200 border border-slate-700/40"
           }`}
         >
-          All
+          {t("plan_all")}
         </button>
         {workstreams.map((ws) => {
           const count = tasks.filter((t) => t.phase === activePhaseNum && t.workstream === ws.name).length;
@@ -192,7 +194,7 @@ export function PlanContent({
             <span key={status} className="inline-flex items-center gap-2 rounded-full bg-[#131b2d] px-3 py-1.5 text-xs">
               <span className={`material-symbols-outlined text-sm ${cfg.color}`}>{cfg.icon}</span>
               <span className="tabular-nums font-medium text-white">{count}</span>
-              <span className="text-slate-500">{cfg.label}</span>
+              <span className="text-slate-500">{t(cfg.key)}</span>
             </span>
           );
         })}
@@ -234,7 +236,7 @@ export function PlanContent({
                   <div className="flex items-center gap-2">
                     <span className={`material-symbols-outlined text-sm ${cfg.color}`}>{cfg.icon}</span>
                     <span className="text-[10px] uppercase tracking-widest font-semibold text-slate-400">
-                      {cfg.label}
+                      {t(cfg.key)}
                     </span>
                   </div>
                   <span className="text-[10px] tabular-nums text-slate-600">{columnTasks.length}</span>
@@ -266,7 +268,7 @@ export function PlanContent({
               {/* Priority group header */}
               <div className={`flex items-center gap-3 mb-3 border-l-2 ${cfg.border} pl-3`}>
                 <span className={`text-[10px] uppercase tracking-widest font-semibold ${cfg.text}`}>
-                  {cfg.label}
+                  {t(cfg.key)}
                 </span>
                 <span className="text-[10px] text-slate-600 tabular-nums">{group.tasks.length}</span>
               </div>
@@ -283,7 +285,7 @@ export function PlanContent({
 
         {priorityGroups.length === 0 && doneTotalInPhase.length === 0 && (
           <div className="rounded-lg bg-[#131b2d] p-8 text-center text-sm text-slate-500">
-            No tasks in this phase{activeWorkstream ? ` for ${activeWorkstream}` : ""}.
+            {t("plan_noTasks")}{activeWorkstream ? ` ${t("plan_noTasksFor")} ${activeWorkstream}` : ""}.
           </div>
         )}
 
@@ -297,7 +299,7 @@ export function PlanContent({
               <span className="material-symbols-outlined text-sm">
                 {showDone ? "expand_less" : "expand_more"}
               </span>
-              {doneTotalInPhase.length} completed
+              {doneTotalInPhase.length} {t("plan_completedCount")}
             </button>
             {showDone && (
               <div className="space-y-1.5 mt-2 opacity-50">
@@ -318,7 +320,7 @@ export function PlanContent({
         return (
           <div>
             <h2 className="text-[10px] tracking-widest uppercase text-slate-500 font-semibold mb-3">
-              Decision Gates
+              {t("plan_decisionGates")}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {phaseGates.map((gate) => {
@@ -359,45 +361,33 @@ export function PlanContent({
 function TaskRow({ task }: { task: TaskData }) {
   const cfg = STATUS_CONFIG[task.status] || STATUS_CONFIG.todo;
   const isDone = task.status === "done";
+  const { t } = useLanguage();
 
   return (
     <div className="flex items-center gap-3 rounded-lg bg-[#131b2d] px-4 py-3 hover:bg-[#171f32] transition-colors">
-      {/* Status icon */}
       <span className={`material-symbols-outlined text-base shrink-0 ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
         {cfg.icon}
       </span>
-
-      {/* Assignee (left side — who owns this?) */}
       <span className={`text-[11px] shrink-0 w-16 truncate ${isDone ? "text-slate-600" : "text-slate-400"}`}>
         {task.assignee?.name.split(" ")[0] || "—"}
       </span>
-
-      {/* Due date (left side — when is it due?) */}
       <span className={`text-[10px] font-mono tabular-nums shrink-0 w-12 ${isDone ? "text-slate-600" : "text-slate-500"}`}>
         {task.dueDate || "—"}
       </span>
-
-      {/* Task code */}
       <span className="text-[10px] font-mono text-slate-600 shrink-0 w-8">{task.taskCode}</span>
-
-      {/* Title */}
       <div className="flex-1 min-w-0">
         <span className={`text-sm truncate block ${isDone ? "line-through text-slate-600" : "text-slate-200"}`}>
           {task.title}
         </span>
       </div>
-
-      {/* Status badge (for blocked/in_progress) */}
       {(task.status === "blocked" || task.status === "in_progress") && (
         <span className={`text-[9px] uppercase tracking-wider font-semibold shrink-0 ${cfg.color}`}>
-          {cfg.label}
+          {t(cfg.key)}
         </span>
       )}
-
-      {/* Cross-office badge */}
       {task.isCrossOffice && (
         <span className="text-[9px] uppercase tracking-wider text-[#dfc299]/60 shrink-0">
-          Cross-Office
+          {t("plan_crossOffice")}
         </span>
       )}
     </div>

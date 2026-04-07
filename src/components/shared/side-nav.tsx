@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const mainNav = [
-  { label: "Overview", icon: "dashboard", href: "/" },
-  { label: "Tasks", icon: "event_note", href: "/plan" },
-  { label: "Initiatives", icon: "insights", href: "/value-gains" },
-  { label: "Sales", icon: "storefront", href: "/sales" },
-  { label: "Risks", icon: "warning", href: "/risks" },
-];
-
-const systemNav = [
-  { label: "Organization", icon: "corporate_fare", href: "/settings" },
-];
+import { useLanguage } from "@/lib/i18n/context";
 
 export function SideNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const myTasksActive = pathname.startsWith("/my-tasks");
+
+  const mainNav = [
+    { labelKey: "nav_home" as const, icon: "dashboard", href: "/" },
+    { labelKey: "nav_plan" as const, icon: "event_note", href: "/plan" },
+    { labelKey: "nav_growth" as const, icon: "insights", href: "/value-gains" },
+    { labelKey: "nav_sales" as const, icon: "storefront", href: "/sales" },
+    { labelKey: "nav_risks" as const, icon: "warning", href: "/risks" },
+  ];
+
+  const systemNav = [
+    { labelKey: "nav_organization" as const, icon: "corporate_fare", href: "/settings" },
+  ];
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 hidden lg:flex flex-col bg-slate-950 border-r border-slate-800/50 z-40 overflow-y-auto">
@@ -31,7 +33,7 @@ export function SideNav() {
           </div>
           <div>
             <p className="font-serif text-blue-100 text-sm">Compass OS</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Intelligence Hub</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest">{t("nav_intelligenceHub")}</p>
           </div>
         </div>
 
@@ -49,13 +51,10 @@ export function SideNav() {
                     : "flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-all"
                 }
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                >
+                <span className="material-symbols-outlined" style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
                   {item.icon}
                 </span>
-                <span className="font-sans text-sm font-light tracking-wide">{item.label}</span>
+                <span className="font-sans text-sm font-light tracking-wide">{t(item.labelKey)}</span>
               </Link>
             );
           })}
@@ -74,7 +73,7 @@ export function SideNav() {
             <span className="material-symbols-outlined text-lg" style={myTasksActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
               assignment_turned_in
             </span>
-            My Tasks
+            {t("nav_myTasks")}
           </Link>
         </div>
 
@@ -93,7 +92,7 @@ export function SideNav() {
                 }
               >
                 <span className="material-symbols-outlined">{item.icon}</span>
-                <span className="font-sans text-sm font-light tracking-wide">{item.label}</span>
+                <span className="font-sans text-sm font-light tracking-wide">{t(item.labelKey)}</span>
               </Link>
             );
           })}
@@ -104,11 +103,11 @@ export function SideNav() {
       <div className="mt-auto p-6 border-t border-slate-800/50">
         <a href="#" className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-300 transition-all">
           <span className="material-symbols-outlined">help_outline</span>
-          <span className="font-sans text-sm font-light tracking-wide">Support</span>
+          <span className="font-sans text-sm font-light tracking-wide">{t("nav_support")}</span>
         </a>
         <a href="#" className="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-300 transition-all">
           <span className="material-symbols-outlined">logout</span>
-          <span className="font-sans text-sm font-light tracking-wide">Logout</span>
+          <span className="font-sans text-sm font-light tracking-wide">{t("nav_logout")}</span>
         </a>
       </div>
     </aside>

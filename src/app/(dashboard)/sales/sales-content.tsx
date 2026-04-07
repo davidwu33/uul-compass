@@ -5,6 +5,7 @@ import type {
   SalesVertical, SalesRep, SalesAlert, PipelineStage,
   VelocityTrend, ForecastScenario,
 } from "@/lib/data/demo/sales";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface SalesData {
   verticals: SalesVertical[];
@@ -40,11 +41,12 @@ const ALERT_STYLES: Record<string, { border: string; bg: string; icon: string }>
 
 export function SalesContent({ data }: { data: SalesData }) {
   const [activeTab, setActiveTab] = useState<"pipeline" | "reps" | "forecast">("pipeline");
+  const { t } = useLanguage();
 
   const tabs = [
-    { id: "pipeline" as const, label: "Pipeline" },
-    { id: "reps" as const, label: "Reps" },
-    { id: "forecast" as const, label: "Forecast" },
+    { id: "pipeline" as const, labelKey: "sales_tab_pipeline" as const },
+    { id: "reps" as const, labelKey: "sales_tab_reps" as const },
+    { id: "forecast" as const, labelKey: "sales_tab_forecast" as const },
   ];
 
   const totalPipeline = data.pipelineStages.reduce((s, st) => s + st.value, 0);
@@ -55,10 +57,10 @@ export function SalesContent({ data }: { data: SalesData }) {
       {/* Header */}
       <div>
         <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-white">
-          Sales Intelligence
+          {t("sales_title")}
         </h1>
         <p className="mt-2 text-sm text-slate-400">
-          Cross-platform insights from Copper, Wrike, Slack, and Gmail.
+          {t("sales_subtitle")}
         </p>
       </div>
 
@@ -74,7 +76,7 @@ export function SalesContent({ data }: { data: SalesData }) {
                 : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -84,19 +86,19 @@ export function SalesContent({ data }: { data: SalesData }) {
         <div className="space-y-6">
           {/* KPI Row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard label="Weighted Pipeline" value={formatUsd(data.kpis.weightedPipeline)} sub="14% vs. last month" trend="up" color="border-[#b4c5ff]" />
-            <KPICard label="Avg. Days to Close" value={`${data.kpis.avgDaysToClose}d`} sub="3d faster than Q1" trend="up" color="border-[#8b5cf6]" />
-            <KPICard label="Activity-to-Close" value={data.kpis.activityToCloseRatio} sub="From 8.1:1 in Q4" trend="up" color="border-emerald-400" />
-            <KPICard label="Revenue at Risk" value={formatUsd(data.kpis.revenueAtRisk)} sub="3 deals stale >7 days" trend="down" color="border-red-400" />
+            <KPICard label={t("sales_weightedPipeline")} value={formatUsd(data.kpis.weightedPipeline)} sub="14% vs. last month" trend="up" color="border-[#b4c5ff]" />
+            <KPICard label={t("sales_avgDaysToClose")} value={`${data.kpis.avgDaysToClose}d`} sub="3d faster than Q1" trend="up" color="border-[#8b5cf6]" />
+            <KPICard label={t("sales_activityToClose")} value={data.kpis.activityToCloseRatio} sub="From 8.1:1 in Q4" trend="up" color="border-emerald-400" />
+            <KPICard label={t("sales_revenueAtRisk")} value={formatUsd(data.kpis.revenueAtRisk)} sub="3 deals stale >7 days" trend="down" color="border-red-400" />
           </div>
 
           {/* Cross-Platform Action Signals */}
           <div className="rounded-lg bg-[#131b2d] p-5">
             <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-base font-medium text-white">Cross-Platform Action Signals</h2>
-              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-emerald-400/10 text-emerald-400">Live</span>
+              <h2 className="text-base font-medium text-white">{t("sales_actionSignals")}</h2>
+              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-emerald-400/10 text-emerald-400">{t("sales_live")}</span>
             </div>
-            <p className="text-[11px] text-slate-500 mb-4">Insights requiring Copper x Wrike x Slack correlation</p>
+            <p className="text-[11px] text-slate-500 mb-4">{t("sales_signalsSubtitle")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {data.alerts.map((alert, i) => {
                 const style = ALERT_STYLES[alert.type] || ALERT_STYLES.info;
@@ -120,7 +122,7 @@ export function SalesContent({ data }: { data: SalesData }) {
             {/* Verticals */}
             <div className="rounded-lg bg-[#131b2d] p-5">
               <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-base font-medium text-white">Pipeline by Vertical</h2>
+                <h2 className="text-base font-medium text-white">{t("sales_pipelineByVertical")}</h2>
                 <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-[#b4c5ff]/10 text-[#b4c5ff] font-mono">Copper</span>
               </div>
               <div className="space-y-3">
@@ -142,15 +144,15 @@ export function SalesContent({ data }: { data: SalesData }) {
                 })}
               </div>
               <div className="flex gap-4 border-t border-slate-800/50 pt-3 mt-4 text-[11px] text-slate-500">
-                <span><span className="text-white font-semibold">{formatUsd(data.kpis.annualTarget)}</span> annual target</span>
-                <span><span className="text-[#b4c5ff] font-semibold">{pipelineCoverage}%</span> pipeline coverage</span>
+                <span><span className="text-white font-semibold">{formatUsd(data.kpis.annualTarget)}</span> {t("sales_annualTarget")}</span>
+                <span><span className="text-[#b4c5ff] font-semibold">{pipelineCoverage}%</span> {t("sales_pipelineCoverage")}</span>
               </div>
             </div>
 
             {/* Stage Distribution */}
             <div className="rounded-lg bg-[#131b2d] p-5">
               <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-base font-medium text-white">Pipeline Stages</h2>
+                <h2 className="text-base font-medium text-white">{t("sales_pipelineStages")}</h2>
                 <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-[#b4c5ff]/10 text-[#b4c5ff] font-mono">Copper + Wrike</span>
               </div>
 
@@ -186,17 +188,17 @@ export function SalesContent({ data }: { data: SalesData }) {
           {/* Rep Performance Matrix */}
           <div className="rounded-lg bg-[#131b2d] p-5">
             <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-base font-medium text-white">Rep Performance Matrix</h2>
+              <h2 className="text-base font-medium text-white">{t("sales_repMatrix")}</h2>
               <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-[#b4c5ff]/10 text-[#b4c5ff] font-mono">Copper + Slack</span>
             </div>
 
             {/* Header */}
             <div className="grid grid-cols-[1.4fr_0.8fr_0.6fr_0.6fr_0.8fr] gap-2 py-2 border-b border-slate-700/50 text-[10px] uppercase tracking-wider text-slate-600 font-mono">
-              <div>Rep</div>
-              <div>Pipeline</div>
-              <div className="text-center">Acts/30d</div>
-              <div className="text-center">Stale</div>
-              <div>Quota</div>
+              <div>{t("sales_rep")}</div>
+              <div>{t("sales_pipeline")}</div>
+              <div className="text-center">{t("sales_acts")}</div>
+              <div className="text-center">{t("sales_stale")}</div>
+              <div>{t("sales_quota")}</div>
             </div>
 
             {/* Rows */}
@@ -235,7 +237,7 @@ export function SalesContent({ data }: { data: SalesData }) {
                         <span className={`text-[11px] font-mono tabular-nums ${quotaText}`}>{rep.quota}%</span>
                       </div>
                     ) : (
-                      <span className="text-[11px] text-slate-600 italic">Unfilled</span>
+                      <span className="text-[11px] text-slate-600 italic">{t("sales_unfilled")}</span>
                     )}
                   </div>
                 </div>
@@ -246,10 +248,10 @@ export function SalesContent({ data }: { data: SalesData }) {
           {/* Activity Heatmap */}
           <div className="rounded-lg bg-[#131b2d] p-5">
             <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-base font-medium text-white">Activity Cadence</h2>
+              <h2 className="text-base font-medium text-white">{t("sales_activityCadence")}</h2>
               <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-[#b4c5ff]/10 text-[#b4c5ff] font-mono">Slack + Copper</span>
             </div>
-            <p className="text-[11px] text-slate-500 mb-4">7-day touchpoint density</p>
+            <p className="text-[11px] text-slate-500 mb-4">{t("sales_cadenceSubtitle")}</p>
 
             <div className="grid gap-1" style={{ gridTemplateColumns: "70px repeat(7, 1fr)" }}>
               {/* Day headers */}
@@ -278,11 +280,11 @@ export function SalesContent({ data }: { data: SalesData }) {
             </div>
 
             <div className="flex items-center gap-2 mt-3">
-              <span className="text-[10px] text-slate-600">Low</span>
+              <span className="text-[10px] text-slate-600">{t("sales_low")}</span>
               {[0.05, 0.15, 0.3, 0.5, 0.8].map((o, i) => (
                 <div key={i} className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: `rgba(180,197,255,${o})` }} />
               ))}
-              <span className="text-[10px] text-slate-600">High</span>
+              <span className="text-[10px] text-slate-600">{t("sales_high")}</span>
             </div>
           </div>
         </div>
@@ -294,8 +296,8 @@ export function SalesContent({ data }: { data: SalesData }) {
           {/* Revenue Forecast */}
           <div className="rounded-lg bg-[#131b2d] p-5">
             <div className="flex items-center gap-3 mb-5">
-              <h2 className="text-base font-medium text-white">Q2 Revenue Forecast</h2>
-              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-[#dfc299]/10 text-[#dfc299] font-mono">AI-Weighted</span>
+              <h2 className="text-base font-medium text-white">{t("sales_forecastTitle")}</h2>
+              <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-[#dfc299]/10 text-[#dfc299] font-mono">{t("sales_aiWeighted")}</span>
             </div>
 
             <div className="space-y-5">
@@ -308,7 +310,7 @@ export function SalesContent({ data }: { data: SalesData }) {
                   <div className="h-2 bg-[#171f32] rounded-full overflow-hidden">
                     <div className="h-full rounded-full opacity-80" style={{ width: `${Math.min(f.pct, 100)}%`, backgroundColor: f.color }} />
                   </div>
-                  <p className="text-[10px] text-slate-600 mt-1 text-right tabular-nums">{f.pct}% of $5.5M quarterly target</p>
+                  <p className="text-[10px] text-slate-600 mt-1 text-right tabular-nums">{f.pct}% {t("sales_quarterlyTarget")}</p>
                 </div>
               ))}
             </div>
@@ -317,10 +319,10 @@ export function SalesContent({ data }: { data: SalesData }) {
           {/* Deal Velocity Trends */}
           <div className="rounded-lg bg-[#131b2d] p-5">
             <div className="flex items-center gap-3 mb-5">
-              <h2 className="text-base font-medium text-white">Deal Velocity Trends</h2>
+              <h2 className="text-base font-medium text-white">{t("sales_velocityTrends")}</h2>
               <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-[#b4c5ff]/10 text-[#b4c5ff] font-mono">Copper</span>
             </div>
-            <p className="text-[11px] text-slate-500 mb-4">Average days per stage over 90d</p>
+            <p className="text-[11px] text-slate-500 mb-4">{t("sales_velocitySubtitle")}</p>
 
             <div className="space-y-4">
               {data.velocityTrends.map((v) => {
@@ -346,10 +348,10 @@ export function SalesContent({ data }: { data: SalesData }) {
 
             <div className="mt-5 rounded-md bg-emerald-400/5 border border-emerald-400/20 px-4 py-3">
               <p className="text-sm text-emerald-400 font-medium">
-                Total Cycle: {data.kpis.totalCycleDays} days (was {data.kpis.prevCycleDays})
+                {t("sales_totalCycle")}: {data.kpis.totalCycleDays}d (was {data.kpis.prevCycleDays}d)
               </p>
               <p className="text-[11px] text-slate-500 mt-1">
-                {Math.round(((data.kpis.prevCycleDays - data.kpis.totalCycleDays) / data.kpis.prevCycleDays) * 100)}% improvement quarter-over-quarter
+                {Math.round(((data.kpis.prevCycleDays - data.kpis.totalCycleDays) / data.kpis.prevCycleDays) * 100)}{t("sales_qoqImprovement")}
               </p>
             </div>
           </div>

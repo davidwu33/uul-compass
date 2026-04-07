@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const items = [
-  { label: "Home", icon: "home", href: "/" },
-  { label: "Tasks", icon: "event_note", href: "/plan" },
-  { label: "Sales", icon: "storefront", href: "/sales" },
-  { label: "My Tasks", icon: "assignment_turned_in", href: "/my-tasks" },
-  { label: "Risks", icon: "warning", href: "/risks" },
-];
+import { useLanguage } from "@/lib/i18n/context";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const items = [
+    { labelKey: "nav_home" as const, icon: "home", href: "/" },
+    { labelKey: "nav_plan" as const, icon: "event_note", href: "/plan" },
+    { labelKey: "nav_sales" as const, icon: "storefront", href: "/sales" },
+    { labelKey: "nav_myTasks" as const, icon: "assignment_turned_in", href: "/my-tasks" },
+    { labelKey: "nav_risks" as const, icon: "warning", href: "/risks" },
+  ];
 
   return (
     <nav className="fixed bottom-0 w-full z-50 lg:hidden bg-slate-950 backdrop-blur-md border-t border-slate-800/50 flex justify-around items-center h-20 pb-[env(safe-area-inset-bottom)] px-4">
@@ -34,7 +36,7 @@ export function BottomNav() {
             >
               {item.icon}
             </span>
-            <span className="font-sans text-[10px] uppercase tracking-tighter">{item.label}</span>
+            <span className="font-sans text-[10px] uppercase tracking-tighter">{t(item.labelKey)}</span>
           </Link>
         );
       })}
