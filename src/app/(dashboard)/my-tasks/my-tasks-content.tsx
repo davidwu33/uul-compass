@@ -178,9 +178,7 @@ function OverdueCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) =
           <StatusDot status={task.status} />
         </div>
       </div>
-      <span className="shrink-0 rounded bg-red-500/20 border border-red-500/40 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-300">
-        {t("tasks_execute")}
-      </span>
+      <AssigneeAvatar assignee={task.assignee} />
     </div>
   );
 }
@@ -209,12 +207,7 @@ function WeekCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => v
           <StatusDot status={task.status} />
         </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <AssigneeAvatar assignee={task.assignee} />
-        <span className="rounded bg-[#b4c5ff]/15 border border-[#b4c5ff]/30 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#b4c5ff]">
-          {t("tasks_execute")}
-        </span>
-      </div>
+      <AssigneeAvatar assignee={task.assignee} />
     </div>
   );
 }

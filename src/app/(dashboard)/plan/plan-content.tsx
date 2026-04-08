@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import type {
   TaskData,
   WorkstreamData,
@@ -13,14 +13,6 @@ import type { CurrentUser } from "@/lib/supabase/get-current-user";
 import { useLanguage } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { TaskModal } from "@/components/task-modal";
-import { updateTaskStatus } from "@/lib/actions/tasks";
-import type { TaskStatus } from "@/lib/actions/tasks";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const WORKSTREAM_KEYS: Record<string, TranslationKey> = {
   "Finance": "ws_Finance",
@@ -54,8 +46,6 @@ const STATUS_CONFIG: Record<string, { color: string; icon: string; label: string
   review:      { color: "text-amber-400",    icon: "rate_review",  label: "Review",      key: "status_todo" },
 };
 
-const ALL_STATUSES: TaskStatus[] = ["todo", "in_progress", "review", "blocked", "done"];
-
 const PRIORITY_ORDER: Record<string, number> = {
   critical: 0, high: 1, medium: 2, low: 3,
 };
@@ -83,6 +73,7 @@ export function PlanContent({
   const [activeWorkstream, setActiveWorkstream] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [viewMode, setViewMode] = useState<"board" | "list">("board");
+  const [activeStatusFilter, setActiveStatusFilter] = useState<string | null>(null);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -107,11 +98,15 @@ export function PlanContent({
   const activeTasks = filtered.filter((t) => t.status !== "done");
   const doneTotalInPhase = filtered.filter((t) => t.status === "done");
 
+  const listTasks = activeStatusFilter
+    ? activeTasks.filter((t) => t.status === activeStatusFilter)
+    : activeTasks;
+
   const priorityGroups = (["critical", "high", "medium", "low"] as const).map((priority) => {
-    const groupTasks = activeTasks
+    const groupTasks = listTasks
       .filter((t) => t.priority === priority)
       .sort((a, b) => {
-        const statusOrder: Record<string, number> = { blocked: 0, in_progress: 1, todo: 2 };
+        const statusOrder: Record<string, number> = { blocked: 0, in_progress: 1, review: 2, todo: 3 };
         const sa = statusOrder[a.status] ?? 9;
         const sb = statusOrder[b.status] ?? 9;
         return sa - sb;
@@ -222,7 +217,7 @@ export function PlanContent({
         })}
         <div className="ml-auto flex items-center gap-1 bg-[#131b2d] rounded-lg p-1">
           <button
-            onClick={() => setViewMode("board")}
+            onClick={() => { setViewMode("board"); setActiveStatusFilter(null); }}
             className={`p-1.5 rounded-md transition-colors ${
               viewMode === "board" ? "bg-[#1a2744] text-[#b4c5ff]" : "text-slate-500 hover:text-slate-300"
             }`}
@@ -242,8 +237,8 @@ export function PlanContent({
 
       {/* ═══ Board View (Kanban) ═══════════════════════════════════ */}
       {viewMode === "board" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {(["blocked", "in_progress", "todo", "done"] as const).map((status) => {
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {(["blocked", "in_progress", "review", "todo", "done"] as const).map((status) => {
             const cfg = STATUS_CONFIG[status];
             const columnTasks = filtered
               .filter((t) => t.status === status)
@@ -261,7 +256,7 @@ export function PlanContent({
 
                 <div className="space-y-2">
                   {columnTasks.map((task) => (
-                    <BoardCard key={task.id} task={task} onEdit={openEdit} canWrite={!!canWrite} />
+                    <BoardCard key={task.id} task={task} onEdit={openEdit} />
                   ))}
                   {columnTasks.length === 0 && (
                     <div className="rounded-lg bg-[#131b2d] p-4 text-center text-[11px] text-slate-600">
@@ -278,6 +273,33 @@ export function PlanContent({
       {/* ═══ List View (Priority-Grouped) ══════════════════════════ */}
       {viewMode === "list" && (
         <div className="space-y-6">
+          {/* Status filter chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {(["blocked", "in_progress", "review", "todo"] as const).map((status) => {
+              const cfg = STATUS_CONFIG[status];
+              const count = activeTasks.filter((t) => t.status === status).length;
+              if (count === 0) return null;
+              const isActive = activeStatusFilter === status;
+              return (
+                <button
+                  key={status}
+                  onClick={() => setActiveStatusFilter(isActive ? null : status)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider transition-all border ${
+                    isActive
+                      ? "bg-[#1a2744] border-[#b4c5ff]/30 text-[#b4c5ff]"
+                      : "bg-[#131b2d] border-slate-700/40 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined text-sm ${isActive ? "text-[#b4c5ff]" : cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {cfg.icon}
+                  </span>
+                  {t(cfg.key)}
+                  <span className="text-slate-500 font-normal">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
           {priorityGroups.map((group) => {
             const cfg = PRIORITY_CONFIG[group.priority];
             return (
@@ -291,7 +313,7 @@ export function PlanContent({
 
                 <div className={`space-y-1.5 ${cfg.opacity}`}>
                   {group.tasks.map((task) => (
-                    <TaskRow key={task.id} task={task} onEdit={openEdit} canWrite={!!canWrite} />
+                    <TaskRow key={task.id} task={task} onEdit={openEdit} />
                   ))}
                 </div>
               </div>
@@ -318,7 +340,7 @@ export function PlanContent({
               {showDone && (
                 <div className="space-y-1.5 mt-2 opacity-50">
                   {doneTotalInPhase.map((task) => (
-                    <TaskRow key={task.id} task={task} onEdit={openEdit} canWrite={!!canWrite} />
+                    <TaskRow key={task.id} task={task} onEdit={openEdit} />
                   ))}
                 </div>
               )}
@@ -383,66 +405,13 @@ export function PlanContent({
   );
 }
 
-// ─── Status Dropdown ────────────────────────────────────────────
-function StatusDropdown({
-  task,
-  canWrite,
-}: {
-  task: TaskData;
-  canWrite: boolean;
-}) {
-  const [pending, startTransition] = useTransition();
-  const cfg = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.todo;
-
-  if (!canWrite) {
-    return (
-      <span className={`material-symbols-outlined text-base shrink-0 ${cfg.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
-        {cfg.icon}
-      </span>
-    );
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        onClick={(e) => e.stopPropagation()}
-        disabled={pending}
-        className="shrink-0 focus:outline-none bg-transparent border-0 p-0 cursor-pointer"
-      >
-        <span className={`material-symbols-outlined text-base ${cfg.color} hover:opacity-70 transition-opacity`} style={{ fontVariationSettings: "'FILL' 1" }}>
-          {cfg.icon}
-        </span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="w-36">
-        {ALL_STATUSES.map((s) => {
-          const scfg = STATUS_CONFIG[s];
-          return (
-            <DropdownMenuItem
-              key={s}
-              className={`text-xs gap-2 ${task.status === s ? "font-semibold" : ""}`}
-              onSelect={() => {
-                startTransition(() => updateTaskStatus(task.id, s));
-              }}
-            >
-              <span className={`material-symbols-outlined text-sm ${scfg.color}`}>{scfg.icon}</span>
-              {scfg.label}
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 // ─── Task Row ───────────────────────────────────────────────────
 function TaskRow({
   task,
   onEdit,
-  canWrite,
 }: {
   task: TaskData;
   onEdit: (t: TaskData) => void;
-  canWrite: boolean;
 }) {
   const isDone = task.status === "done";
 
@@ -451,7 +420,9 @@ function TaskRow({
       onClick={() => onEdit(task)}
       className="flex items-center gap-3 rounded-lg bg-[#131b2d] px-4 py-3 hover:bg-[#171f32] transition-colors cursor-pointer"
     >
-      <StatusDropdown task={task} canWrite={canWrite} />
+      <span className={`material-symbols-outlined text-base shrink-0 ${STATUS_CONFIG[task.status]?.color ?? "text-slate-500"}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+        {STATUS_CONFIG[task.status]?.icon ?? "circle"}
+      </span>
       <span className={`text-[11px] shrink-0 w-16 truncate ${isDone ? "text-slate-600" : "text-slate-400"}`}>
         {task.assignee?.name.split(" ")[0] || "—"}
       </span>
@@ -480,11 +451,9 @@ function TaskRow({
 function BoardCard({
   task,
   onEdit,
-  canWrite,
 }: {
   task: TaskData;
   onEdit: (t: TaskData) => void;
-  canWrite: boolean;
 }) {
   const isCritical = task.priority === "critical";
   const isHigh = task.priority === "high";
@@ -500,7 +469,9 @@ function BoardCard({
       }`}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <StatusDropdown task={task} canWrite={canWrite} />
+        <span className={`material-symbols-outlined text-base shrink-0 ${STATUS_CONFIG[task.status]?.color ?? "text-slate-500"}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+          {STATUS_CONFIG[task.status]?.icon ?? "circle"}
+        </span>
         <span className="text-[10px] font-mono text-slate-600">{task.taskCode}</span>
         {isCritical && (
           <span className="text-[9px] uppercase tracking-wider text-red-400 font-semibold">{t("priority_critical")}</span>
