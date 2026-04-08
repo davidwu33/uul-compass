@@ -71,7 +71,7 @@ export function TaskModal({
         assigneeId: task.assigneeId ?? "",
         priority: task.priority,
         status: task.status,
-        dueDate: task.dueDateRaw ?? "",
+        dueDate: task.dueDate ?? "",
         isCrossOffice: task.isCrossOffice ?? false,
       });
     } else {

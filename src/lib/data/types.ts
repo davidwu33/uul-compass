@@ -28,8 +28,7 @@ export interface TaskData {
   priority: "critical" | "high" | "medium" | "low";
   assignee?: { name: string; initials: string; office?: string };
   assigneeId?: string;
-  dueDate?: string;      // formatted display: "Apr 7"
-  dueDateRaw?: string;   // ISO for form input: "2026-04-07"
+  dueDate?: string;      // ISO: "2026-04-07"
   workstream: string;
   workstreamId?: string;
   workstreamColor?: string;

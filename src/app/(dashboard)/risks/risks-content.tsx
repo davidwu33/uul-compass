@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n/context";
+import { formatDueDate } from "@/lib/utils";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import type { RiskData, TaskData } from "@/lib/data";
 
@@ -155,7 +156,7 @@ export function RisksContent({ risks, linkedTasksMap }: RisksContentProps) {
                             <span className="text-[10px] font-mono text-slate-600 shrink-0 w-8">{task.taskCode}</span>
                             <span className="text-[12px] text-slate-300 flex-1 truncate">{task.title}</span>
                             {task.dueDate && (
-                              <span className="text-[10px] text-slate-600 font-mono tabular-nums shrink-0">{task.dueDate}</span>
+                              <span className="text-[10px] text-slate-600 font-mono tabular-nums shrink-0">{formatDueDate(task.dueDate)}</span>
                             )}
                           </div>
                         );

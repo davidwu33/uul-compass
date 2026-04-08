@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn, isOverdue, formatDueDate } from "@/lib/utils";
 import { Calendar, Globe } from "lucide-react";
 import type { TaskData } from "@/lib/data/types";
 
@@ -39,19 +39,6 @@ const statusBarColor: Record<TaskData["status"], string> = {
   review: "bg-amber-500",
 };
 
-function isOverdue(dateStr: string): boolean {
-  const months: Record<string, number> = {
-    Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-    Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
-  };
-  const parts = dateStr.split(" ");
-  if (parts.length !== 2) return false;
-  const month = months[parts[0]];
-  const day = parseInt(parts[1]);
-  if (month === undefined || isNaN(day)) return false;
-  const dueDate = new Date(2026, month, day);
-  return new Date() > dueDate;
-}
 
 export function PersonalTaskCard({ task }: { task: TaskData }) {
   const overdue =
@@ -123,7 +110,7 @@ export function PersonalTaskCard({ task }: { task: TaskData }) {
             )}
           >
             <Calendar className="h-3 w-3" />
-            {task.dueDate}
+            {formatDueDate(task.dueDate)}
           </span>
         )}
       </div>

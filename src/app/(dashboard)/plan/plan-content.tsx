@@ -13,6 +13,7 @@ import type { CurrentUser } from "@/lib/supabase/get-current-user";
 import { useLanguage } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import { TaskModal } from "@/components/task-modal";
+import { formatDueDate } from "@/lib/utils";
 
 const WORKSTREAM_KEYS: Record<string, TranslationKey> = {
   "Finance": "ws_Finance",
@@ -427,7 +428,7 @@ function TaskRow({
         {task.assignee?.name.split(" ")[0] || "—"}
       </span>
       <span className={`text-[10px] font-mono tabular-nums shrink-0 w-12 ${isDone ? "text-slate-600" : "text-slate-500"}`}>
-        {task.dueDate || "—"}
+        {formatDueDate(task.dueDate) || "—"}
       </span>
       <span className="text-[10px] font-mono text-slate-600 shrink-0 w-8">{task.taskCode}</span>
       <div className="flex-1 min-w-0">
@@ -488,7 +489,7 @@ function BoardCard({
           {task.assignee?.name.split(" ")[0] || "—"}
         </span>
         {task.dueDate && (
-          <span className="text-[10px] font-mono text-slate-600 tabular-nums">{task.dueDate}</span>
+          <span className="text-[10px] font-mono text-slate-600 tabular-nums">{formatDueDate(task.dueDate)}</span>
         )}
       </div>
     </div>

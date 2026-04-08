@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TaskData } from "@/lib/data";
+import { formatDueDate } from "@/lib/utils";
 
 interface NeedsAttentionProps {
   tasks: TaskData[];
@@ -56,7 +57,7 @@ export function NeedsAttention({ tasks }: NeedsAttentionProps) {
                       </span>
                       {task.dueDate && (
                         <span className="text-[10px] text-muted-foreground">
-                          &middot; Due {task.dueDate}
+                          &middot; Due {formatDueDate(task.dueDate)}
                         </span>
                       )}
                       {task.assignee && (

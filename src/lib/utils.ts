@@ -26,7 +26,7 @@ function parseDateString(dateStr: string): Date | null {
   if (parts.length === 2 && SHORT_MONTHS[parts[0]] !== undefined) {
     const month = SHORT_MONTHS[parts[0]];
     const day = parseInt(parts[1]);
-    if (!isNaN(day)) return new Date(2026, month, day);
+    if (!isNaN(day)) return new Date(new Date().getFullYear(), month, day);
   }
   return null;
 }
@@ -38,14 +38,13 @@ function parseDateString(dateStr: string): Date | null {
  */
 export function formatDueDate(dateStr: string | null | undefined): string | undefined {
   if (!dateStr) return undefined;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  }
-  return dateStr; // already in short display format
+  const parsed = parseDateString(dateStr);
+  if (!parsed) return dateStr;
+  return parsed.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /**

@@ -139,8 +139,7 @@ export const getTasks = cache(async (): Promise<TaskData[]> => {
       ? { name: u.fullName, initials: makeInitials(u.fullName) }
       : undefined,
     assigneeId: t.assigneeId ?? undefined,
-    dueDate: t.dueDate ? formatDueDate(t.dueDate) : undefined,
-    dueDateRaw: t.dueDate ?? undefined,
+    dueDate: t.dueDate ?? undefined,
     workstream: ws?.name ?? "",
     workstreamId: t.workstreamId,
     workstreamColor: ws?.color ?? undefined,

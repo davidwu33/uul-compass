@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { TaskData, WorkstreamData, UserOption } from "@/lib/data";
 import type { CurrentUser } from "@/lib/supabase/get-current-user";
 import { useLanguage } from "@/lib/i18n/context";
+import { formatDueDate, isOverdue } from "@/lib/utils";
 import { TaskModal } from "@/components/task-modal";
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -31,16 +32,9 @@ function parseDate(dateStr: string): Date | null {
   const month = MONTHS[parts[0]];
   const day = parseInt(parts[1]);
   if (month === undefined || isNaN(day)) return null;
-  return new Date(2026, month, day);
+  return new Date(new Date().getFullYear(), month, day);
 }
 
-function isOverdue(dateStr: string): boolean {
-  const d = parseDate(dateStr);
-  if (!d) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return d < today;
-}
 
 function isThisWeek(dateStr: string): boolean {
   const d = parseDate(dateStr);
@@ -141,6 +135,14 @@ function StatusDot({ status }: { status: string }) {
       </span>
     );
   }
+  if (status === "review") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-400">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+        {t("status_review")}
+      </span>
+    );
+  }
   return null;
 }
 
@@ -201,7 +203,7 @@ function WeekCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => v
         <div className="flex items-center gap-3 mt-1">
           {task.dueDate && (
             <span className="text-[11px] text-slate-500 tabular-nums">
-              {t("tasks_due")} {task.dueDate}
+              {t("tasks_due")} {formatDueDate(task.dueDate)}
             </span>
           )}
           <StatusDot status={task.status} />
@@ -229,7 +231,7 @@ function LaterCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => 
         <div className="flex items-center gap-3 mt-1">
           {task.dueDate && (
             <span className="text-[11px] text-slate-500 tabular-nums">
-              {t("tasks_due")} {task.dueDate}
+              {t("tasks_due")} {formatDueDate(task.dueDate)}
             </span>
           )}
           <StatusDot status={task.status} />

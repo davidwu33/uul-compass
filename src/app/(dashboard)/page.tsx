@@ -9,6 +9,7 @@ import {
   getCurrentDay,
 } from "@/lib/data";
 import { DashboardContent } from "./dashboard-content";
+import { formatDueDate } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const [stats, phases, gates, attentionTasks, decisions, currentDay] = await Promise.all([
@@ -36,7 +37,7 @@ export default async function DashboardPage() {
       type: "task" as const,
       id: t.id,
       title: t.title,
-      subtitle: `${t.assignee?.name || "Unassigned"}${t.dueDate ? ` · Due ${t.dueDate}` : ""}`,
+      subtitle: `${t.assignee?.name || "Unassigned"}${t.dueDate ? ` · Due ${formatDueDate(t.dueDate)}` : ""}`,
       badge: t.status === "blocked" ? "Blocked" : "Overdue",
       badgeColor: t.status === "blocked" ? "text-red-400" : "text-amber-400",
       borderColor: t.status === "blocked" ? "border-red-400" : "border-amber-400",
@@ -49,7 +50,7 @@ export default async function DashboardPage() {
         type: "task" as const,
         id: t.id,
         title: t.title,
-        subtitle: `${t.assignee?.name || "Unassigned"}${t.dueDate ? ` · Due ${t.dueDate}` : ""}`,
+        subtitle: `${t.assignee?.name || "Unassigned"}${t.dueDate ? ` · Due ${formatDueDate(t.dueDate)}` : ""}`,
         badge: "Critical",
         badgeColor: "text-red-400",
         borderColor: "border-red-400",
