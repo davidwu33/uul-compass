@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/context";
 import { formatDueDate } from "@/lib/utils";
 import type { TranslationKey } from "@/lib/i18n/translations";
-import type { RiskData, TaskData } from "@/lib/data";
+import type { RiskData, TaskData, WorkstreamData, UserOption } from "@/lib/data";
+import type { CurrentUser } from "@/lib/supabase/get-current-user";
+import { RiskModal } from "@/components/risk-modal";
+import { Button } from "@/components/ui/button";
 
 const WORKSTREAM_KEYS: Record<string, TranslationKey> = {
   "Finance": "ws_Finance",
@@ -36,10 +40,17 @@ const taskStatusConfig: Record<string, { color: string; icon: string }> = {
 interface RisksContentProps {
   risks: RiskData[];
   linkedTasksMap: Record<string, TaskData[]>;
+  workstreams: WorkstreamData[];
+  userOptions: UserOption[];
+  currentUser: CurrentUser | null;
 }
 
-export function RisksContent({ risks, linkedTasksMap }: RisksContentProps) {
+export function RisksContent({ risks, linkedTasksMap, workstreams, userOptions, currentUser }: RisksContentProps) {
   const { t } = useLanguage();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingRisk, setEditingRisk] = useState<RiskData | null>(null);
+
+  const canWrite = currentUser?.isAdmin || currentUser?.isContributor;
 
   const sorted = [...risks].sort((a, b) => {
     const order = { high: 0, medium: 1, low: 2 };
@@ -52,16 +63,34 @@ export function RisksContent({ risks, linkedTasksMap }: RisksContentProps) {
     low: risks.filter((r) => r.severity === "low").length,
   };
 
+  function openNew() {
+    setEditingRisk(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(risk: RiskData) {
+    setEditingRisk(risk);
+    setModalOpen(true);
+  }
+
   return (
     <div className="space-y-8">
       {/* ── Header ──────────────────────────────────────────── */}
-      <div>
-        <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-white">
-          {t("risks_title")}
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          {risks.length} {t("risks_tracked")} &middot; {counts.high} {t("risks_high")}, {counts.medium} {t("risks_medium")}, {counts.low} {t("risks_low")}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-white">
+            {t("risks_title")}
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            {risks.length} {t("risks_tracked")} &middot; {counts.high} {t("risks_high")}, {counts.medium} {t("risks_medium")}, {counts.low} {t("risks_low")}
+          </p>
+        </div>
+        {canWrite && (
+          <Button size="sm" onClick={openNew} className="shrink-0 text-xs h-8 mt-1">
+            <span className="material-symbols-outlined text-sm mr-1">add</span>
+            New Risk
+          </Button>
+        )}
       </div>
 
       {/* ── Summary pills ───────────────────────────────────── */}
@@ -120,6 +149,15 @@ export function RisksContent({ risks, linkedTasksMap }: RisksContentProps) {
                     {risk.targetDate && (
                       <span className="text-[10px] text-slate-600 font-mono tabular-nums">{risk.targetDate}</span>
                     )}
+                    {canWrite && (
+                      <button
+                        onClick={() => openEdit(risk)}
+                        className="text-slate-600 hover:text-slate-300 transition-colors ml-1"
+                        aria-label="Edit risk"
+                      >
+                        <span className="material-symbols-outlined text-base">edit</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -169,6 +207,18 @@ export function RisksContent({ risks, linkedTasksMap }: RisksContentProps) {
           );
         })}
       </div>
+
+      {/* ── Modal ───────────────────────────────────────────── */}
+      {currentUser && (
+        <RiskModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          risk={editingRisk}
+          workstreams={workstreams}
+          userOptions={userOptions}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 }
