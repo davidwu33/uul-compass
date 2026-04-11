@@ -7,6 +7,7 @@ import {
   valueInitiatives,
   meetingNotes,
   meetingAttendees,
+  taskMeetings,
   activities,
   users,
 } from "@/db/schema";
@@ -20,6 +21,8 @@ interface MeetingSource {
   title: string;
   date: string; // YYYY-MM-DD
   participants?: string[];
+  decisions?: string[]; // Array of decision strings from the meeting
+  body?: string;        // Full meeting notes/transcript
 }
 
 interface TaskUpdate {
@@ -171,6 +174,8 @@ export async function POST(request: NextRequest) {
       title: body.source.title,
       meetingDate: body.source.date,
       meetingType: body.source.type,
+      decisions: body.source.decisions ?? null,
+      body: body.source.body ?? null,
     })
     .returning({ id: meetingNotes.id });
 
@@ -214,6 +219,8 @@ export async function POST(request: NextRequest) {
     if (tu.updates.notes !== undefined) patch.notes = tu.updates.notes;
 
     await db.update(pmiTasks).set(patch).where(eq(pmiTasks.id, tu.task_id));
+
+    await db.insert(taskMeetings).values({ taskId: tu.task_id, meetingId }).onConflictDoNothing();
 
     const changes = changesMap(
       { status: existing.status, progress: existing.progress, notes: existing.notes },
@@ -271,6 +278,8 @@ export async function POST(request: NextRequest) {
         meetingId,
       })
       .returning({ id: pmiTasks.id, title: pmiTasks.title });
+
+    await db.insert(taskMeetings).values({ taskId: created.id, meetingId }).onConflictDoNothing();
 
     await db.insert(activities).values({
       targetType: "task",

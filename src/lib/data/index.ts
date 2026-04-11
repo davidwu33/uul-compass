@@ -16,6 +16,10 @@ export type {
   PillarSubItem,
   FinancialPulseMetric,
   ActivityItem,
+  TaskMeeting,
+  TaskActivity,
+  TaskComment,
+  TaskActionItem,
 } from "./types";
 
 import { cache } from "react";
@@ -31,8 +35,14 @@ import {
   valueInitiatives,
   valueSnapshots as valueSnapshotsTable,
   users,
+  taskMeetings,
+  meetingNotes,
+  meetingAttendees,
+  activities,
+  comments,
+  actionItems,
 } from "@/db/schema";
-import { eq, asc, sql } from "drizzle-orm";
+import { eq, asc, sql, desc, and, inArray } from "drizzle-orm";
 import { demoScorecard, demoPillarScorecard, demoAllMetrics, demoFinancialPulse } from "./demo/metrics";
 import { isOverdue, calcDayNumber, formatDueDate } from "@/lib/utils";
 import type {
@@ -477,6 +487,161 @@ export async function getUsers(): Promise<UserOption[]> {
     .from(users)
     .where(eq(users.isActive, true))
     .orderBy(asc(users.fullName));
+}
+
+import type { TaskMeeting, TaskActivity, TaskComment, TaskActionItem } from "./types";
+
+// ─── Task detail — linked meetings ─────────────────────────────────────────────
+
+export async function getTaskMeetings(taskId: string): Promise<TaskMeeting[]> {
+  // Source 1: junction table (many-to-many, populated by API going forward)
+  const [junctionRows, taskRow] = await Promise.all([
+    db
+      .select({
+        id: meetingNotes.id,
+        title: meetingNotes.title,
+        meetingDate: meetingNotes.meetingDate,
+        meetingType: meetingNotes.meetingType,
+        body: meetingNotes.body,
+        decisions: meetingNotes.decisions,
+      })
+      .from(taskMeetings)
+      .innerJoin(meetingNotes, eq(taskMeetings.meetingId, meetingNotes.id))
+      .where(eq(taskMeetings.taskId, taskId)),
+
+    // Source 2: direct FK on the task (legacy — last meeting that touched it)
+    db
+      .select({
+        id: meetingNotes.id,
+        title: meetingNotes.title,
+        meetingDate: meetingNotes.meetingDate,
+        meetingType: meetingNotes.meetingType,
+        body: meetingNotes.body,
+        decisions: meetingNotes.decisions,
+      })
+      .from(pmiTasks)
+      .innerJoin(meetingNotes, eq(pmiTasks.meetingId, meetingNotes.id))
+      .where(eq(pmiTasks.id, taskId))
+      .limit(1),
+  ]);
+
+  // Merge and deduplicate by meeting ID
+  const seen = new Set<string>();
+  const merged: typeof junctionRows = [];
+  for (const row of [...junctionRows, ...taskRow]) {
+    if (!seen.has(row.id)) {
+      seen.add(row.id);
+      merged.push(row);
+    }
+  }
+
+  if (merged.length === 0) return [];
+
+  // Fetch all attendees for these meetings in one query
+  const meetingIds = merged.map((m) => m.id);
+  const attendeeRows = await db
+    .select({ meetingId: meetingAttendees.meetingId, fullName: users.fullName })
+    .from(meetingAttendees)
+    .innerJoin(users, eq(meetingAttendees.userId, users.id))
+    .where(inArray(meetingAttendees.meetingId, meetingIds));
+
+  const byMeeting = new Map<string, { name: string; initials: string }[]>();
+  for (const a of attendeeRows) {
+    const list = byMeeting.get(a.meetingId!) ?? [];
+    list.push({ name: a.fullName, initials: makeInitials(a.fullName) });
+    byMeeting.set(a.meetingId!, list);
+  }
+
+  return merged
+    .sort((a, b) => b.meetingDate.localeCompare(a.meetingDate))
+    .map((m) => ({
+      id: m.id,
+      title: m.title,
+      meetingDate: m.meetingDate,
+      meetingType: m.meetingType,
+      body: m.body,
+      decisions: (m.decisions as string[]) ?? [],
+      attendees: byMeeting.get(m.id) ?? [],
+    }));
+}
+
+// ─── Task detail — activity log ────────────────────────────────────────────────
+
+export async function getTaskActivities(taskId: string): Promise<TaskActivity[]> {
+  const rows = await db
+    .select({
+      id: activities.id,
+      action: activities.action,
+      changes: activities.changes,
+      notes: activities.notes,
+      actorName: users.fullName,
+      createdAt: activities.createdAt,
+    })
+    .from(activities)
+    .leftJoin(users, eq(activities.actorId, users.id))
+    .where(and(eq(activities.targetType, "task"), eq(activities.targetId, taskId)))
+    .orderBy(desc(activities.createdAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    action: r.action,
+    changes: r.changes as Record<string, string> | null,
+    notes: r.notes,
+    actor: r.actorName ? { name: r.actorName, initials: makeInitials(r.actorName) } : null,
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+// ─── Task detail — comments ────────────────────────────────────────────────────
+
+export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
+  const rows = await db
+    .select({
+      id: comments.id,
+      body: comments.body,
+      authorName: users.fullName,
+      createdAt: comments.createdAt,
+    })
+    .from(comments)
+    .innerJoin(users, eq(comments.authorId, users.id))
+    .where(and(eq(comments.targetType, "task"), eq(comments.targetId, taskId)))
+    .orderBy(asc(comments.createdAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    body: r.body,
+    author: { name: r.authorName, initials: makeInitials(r.authorName) },
+    createdAt: r.createdAt.toISOString(),
+  }));
+}
+
+// ─── Task detail — action items ────────────────────────────────────────────────
+
+export async function getTaskActionItems(taskId: string): Promise<TaskActionItem[]> {
+  const rows = await db
+    .select({
+      id: actionItems.id,
+      title: actionItems.title,
+      description: actionItems.description,
+      assigneeName: users.fullName,
+      dueDate: actionItems.dueDate,
+      status: actionItems.status,
+      createdAt: actionItems.createdAt,
+    })
+    .from(actionItems)
+    .leftJoin(users, eq(actionItems.assigneeId, users.id))
+    .where(and(eq(actionItems.targetType, "task"), eq(actionItems.targetId, taskId)))
+    .orderBy(desc(actionItems.createdAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    assignee: r.assigneeName ? { name: r.assigneeName, initials: makeInitials(r.assigneeName) } : null,
+    dueDate: r.dueDate,
+    status: r.status as TaskActionItem["status"],
+    createdAt: r.createdAt.toISOString(),
+  }));
 }
 
 export function getSalesData() {

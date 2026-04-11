@@ -1,5 +1,13 @@
 import { notFound } from "next/navigation";
-import { getTaskById, getWorkstreams, getUsers } from "@/lib/data";
+import {
+  getTaskById,
+  getWorkstreams,
+  getUsers,
+  getTaskMeetings,
+  getTaskActivities,
+  getTaskComments,
+  getTaskActionItems,
+} from "@/lib/data";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { TaskDetailContent } from "./task-detail-content";
 
@@ -10,12 +18,17 @@ interface Props {
 export default async function TaskDetailPage({ params }: Props) {
   const { id } = await params;
 
-  const [task, workstreams, userOptions, currentUser] = await Promise.all([
-    getTaskById(id),
-    getWorkstreams(),
-    getUsers(),
-    getCurrentUser(),
-  ]);
+  const [task, workstreams, userOptions, currentUser, meetings, taskActivities, taskComments, taskActionItems] =
+    await Promise.all([
+      getTaskById(id),
+      getWorkstreams(),
+      getUsers(),
+      getCurrentUser(),
+      getTaskMeetings(id),
+      getTaskActivities(id),
+      getTaskComments(id),
+      getTaskActionItems(id),
+    ]);
 
   if (!task) notFound();
 
@@ -25,6 +38,10 @@ export default async function TaskDetailPage({ params }: Props) {
       workstreams={workstreams}
       userOptions={userOptions}
       currentUser={currentUser}
+      meetings={meetings}
+      taskActivities={taskActivities}
+      taskComments={taskComments}
+      taskActionItems={taskActionItems}
     />
   );
 }

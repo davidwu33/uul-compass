@@ -8,6 +8,7 @@ import {
   date,
   timestamp,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
 import { pmiStatusEnum, taskStatusEnum, taskPriorityEnum } from "./enums";
 import { users, departments } from "./org";
@@ -75,3 +76,15 @@ export const pmiTasks = pgTable("pmi_tasks", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ─── Task ↔ Meeting junction ────────────────────────────────────
+// Many-to-many: one task can appear in multiple meetings, one meeting can touch many tasks.
+// The API populates this on every task create/update triggered by a meeting.
+export const taskMeetings = pgTable("task_meetings", {
+  id: uuid().defaultRandom().primaryKey(),
+  taskId: uuid("task_id").references(() => pmiTasks.id, { onDelete: "cascade" }).notNull(),
+  meetingId: uuid("meeting_id").references(() => meetingNotes.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  unique().on(t.taskId, t.meetingId),
+]);

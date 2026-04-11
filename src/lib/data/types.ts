@@ -142,3 +142,39 @@ export interface ActivityItem {
   timeAgo: string;
   type: "created" | "completed" | "commented" | "updated";
 }
+
+export interface TaskMeeting {
+  id: string;
+  title: string;
+  meetingDate: string;
+  meetingType: string | null;
+  body: string | null;
+  decisions: string[];
+  attendees: { name: string; initials: string }[];
+}
+
+export interface TaskActivity {
+  id: string;
+  action: string;
+  changes: Record<string, string> | null;
+  notes: string | null;
+  actor: { name: string; initials: string } | null;
+  createdAt: string;
+}
+
+export interface TaskComment {
+  id: string;
+  body: string;
+  author: { name: string; initials: string };
+  createdAt: string;
+}
+
+export interface TaskActionItem {
+  id: string;
+  title: string;
+  description: string | null;
+  assignee: { name: string; initials: string } | null;
+  dueDate: string | null;
+  status: "open" | "in_progress" | "done" | "cancelled";
+  createdAt: string;
+}
