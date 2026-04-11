@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { TaskData, WorkstreamData, UserOption } from "@/lib/data";
 import type { CurrentUser } from "@/lib/supabase/get-current-user";
 import { useLanguage } from "@/lib/i18n/context";
@@ -148,12 +148,12 @@ function AssigneeAvatar({ assignee }: { assignee: TaskData["assignee"] }) {
 
 // ─── Card variants ────────────────────────────────────────────
 
-function OverdueCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => void }) {
+function OverdueCard({ task }: { task: TaskData }) {
   const { t } = useLanguage();
   return (
-    <div
-      onClick={() => onEdit(task)}
-      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 cursor-pointer hover:bg-[#171f32] transition-colors"
+    <Link
+      href={`/tasks/${task.id}`}
+      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 hover:bg-[#171f32] active:scale-[0.98] active:opacity-75 transition-all"
     >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-red-500" />
       <TaskCode code={task.taskCode} />
@@ -172,16 +172,16 @@ function OverdueCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) =
         </div>
       </div>
       <AssigneeAvatar assignee={task.assignee} />
-    </div>
+    </Link>
   );
 }
 
-function WeekCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => void }) {
+function WeekCard({ task }: { task: TaskData }) {
   const { t } = useLanguage();
   return (
-    <div
-      onClick={() => onEdit(task)}
-      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 cursor-pointer hover:bg-[#171f32] transition-colors"
+    <Link
+      href={`/tasks/${task.id}`}
+      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 hover:bg-[#171f32] active:scale-[0.98] active:opacity-75 transition-all"
     >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-blue-500" />
       <TaskCode code={task.taskCode} />
@@ -201,16 +201,16 @@ function WeekCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => v
         </div>
       </div>
       <AssigneeAvatar assignee={task.assignee} />
-    </div>
+    </Link>
   );
 }
 
-function LaterCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => void }) {
+function LaterCard({ task }: { task: TaskData }) {
   const { t } = useLanguage();
   return (
-    <div
-      onClick={() => onEdit(task)}
-      className="relative rounded-lg bg-[#131b2d]/60 p-4 pl-6 flex items-center gap-4 cursor-pointer hover:bg-[#171f32]/60 transition-colors"
+    <Link
+      href={`/tasks/${task.id}`}
+      className="relative rounded-lg bg-[#131b2d]/60 p-4 pl-6 flex items-center gap-4 hover:bg-[#171f32]/60 active:scale-[0.98] active:opacity-75 transition-all"
     >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-slate-600" />
       <TaskCode code={task.taskCode} />
@@ -229,7 +229,7 @@ function LaterCard({ task, onEdit }: { task: TaskData; onEdit: (t: TaskData) => 
         </div>
       </div>
       <AssigneeAvatar assignee={task.assignee} />
-    </div>
+    </Link>
   );
 }
 
@@ -308,12 +308,10 @@ export function MyTasksContent({ tasks, currentUser, workstreams, userOptions }:
   const { overdue, thisWeek, later, completed } = groupTasks(tasks);
   const activeTasks = tasks.filter((t) => t.status !== "done");
   const { t } = useLanguage();
-  const router = useRouter();
 
   const [modalOpen, setModalOpen] = useState(false);
 
   function openCreate() { setModalOpen(true); }
-  function openEdit(task: TaskData) { router.push(`/tasks/${task.id}`); }
 
   return (
     <div className="space-y-10">
@@ -354,7 +352,7 @@ export function MyTasksContent({ tasks, currentUser, workstreams, userOptions }:
         badgeText={`${overdue.length} ${t("tasks_actionsRequired")}`}
         badgeColor="bg-red-500/20 text-red-400"
       >
-        {overdue.map((task) => <OverdueCard key={task.id} task={task} onEdit={openEdit} />)}
+        {overdue.map((task) => <OverdueCard key={task.id} task={task} />)}
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -365,7 +363,7 @@ export function MyTasksContent({ tasks, currentUser, workstreams, userOptions }:
         badgeText={`${thisWeek.length}`}
         badgeColor="bg-[#b4c5ff]/15 text-[#b4c5ff]"
       >
-        {thisWeek.map((task) => <WeekCard key={task.id} task={task} onEdit={openEdit} />)}
+        {thisWeek.map((task) => <WeekCard key={task.id} task={task} />)}
       </CollapsibleSection>
 
       <CollapsibleSection
@@ -378,7 +376,7 @@ export function MyTasksContent({ tasks, currentUser, workstreams, userOptions }:
         defaultOpen={false}
         opacity="opacity-60 hover:opacity-100 transition-opacity"
       >
-        {later.map((task) => <LaterCard key={task.id} task={task} onEdit={openEdit} />)}
+        {later.map((task) => <LaterCard key={task.id} task={task} />)}
       </CollapsibleSection>
 
       <CollapsibleSection

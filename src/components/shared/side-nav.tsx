@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n/context";
 import { logoutAction } from "@/lib/actions/auth";
-import { RippleLink, RippleButton } from "@/hooks/use-ripple";
 
 type UserProps = { fullName: string; email: string; role: string } | null;
 
@@ -62,27 +62,27 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
           {allNav.map((item) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
-              <RippleLink
+              <Link
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
                 className={
                   isActive
-                    ? "flex items-center gap-3 px-4 py-3 text-blue-200 font-semibold bg-blue-900/30 border-l-4 border-blue-500 transition-all"
-                    : "flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-all"
+                    ? "flex items-center gap-3 px-4 py-3 text-blue-200 font-semibold bg-blue-900/30 border-l-4 border-blue-500 transition-all active:opacity-60"
+                    : "flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-300 hover:bg-slate-900 transition-all active:opacity-60"
                 }
               >
                 <span className="material-symbols-outlined" style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
                   {item.icon}
                 </span>
                 <span className="font-sans text-sm font-light tracking-wide">{t(item.labelKey)}</span>
-              </RippleLink>
+              </Link>
             );
           })}
-          <RippleLink
+          <Link
             href="/my-tasks"
             onClick={onClose}
-            className={`flex items-center gap-3 px-4 py-2.5 mx-0 rounded-lg text-sm font-semibold tracking-wide transition-all ${
+            className={`flex items-center gap-3 px-4 py-2.5 mx-0 rounded-lg text-sm font-semibold tracking-wide transition-all active:scale-[0.97] active:opacity-75 ${
               myTasksActive
                 ? "bg-[#b4c5ff] text-[#0b1325]"
                 : "bg-[#b4c5ff]/15 text-[#b4c5ff] border border-[#b4c5ff]/30 hover:bg-[#b4c5ff]/25"
@@ -92,7 +92,7 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
               assignment_turned_in
             </span>
             {t("nav_myTasks")}
-          </RippleLink>
+          </Link>
         </nav>
       </div>
 
@@ -123,13 +123,13 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
         </div>
 
         {/* Logout */}
-        <RippleButton
+        <button
           onClick={() => logoutAction()}
           className="flex items-center gap-3 px-4 py-2 w-full text-slate-500 hover:text-red-400 transition-all"
         >
           <span className="material-symbols-outlined">logout</span>
           <span className="font-sans text-sm font-light tracking-wide">{t("nav_logout")}</span>
-        </RippleButton>
+        </button>
       </div>
     </aside>
     </>

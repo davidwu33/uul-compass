@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/context";
-import { RippleLink } from "@/hooks/use-ripple";
 import type { PhaseData, DecisionGate, TaskData, FinancialPulseMetric, PillarMetric } from "@/lib/data";
 
 interface DashboardContentProps {
@@ -196,10 +196,10 @@ export function DashboardContent({
         ) : (
           <div className="space-y-3">
             {attentionItems.slice(0, 8).map((item) => (
-              <RippleLink
+              <Link
                 key={item.id}
                 href={item.type === "task" ? `/tasks/${item.id}` : "/decisions"}
-                className={`block rounded-lg bg-[#131b2d] border-l-2 ${item.borderColor} p-4 hover:bg-[#1a2540] transition-colors`}
+                className={`block rounded-lg bg-[#131b2d] border-l-2 ${item.borderColor} p-4 hover:bg-[#1a2540] active:scale-[0.98] active:opacity-75 transition-all`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -226,7 +226,7 @@ export function DashboardContent({
                     <div className="h-2 w-2 rounded-full shrink-0 mt-2" style={{ backgroundColor: item.workstreamColor }} />
                   )}
                 </div>
-              </RippleLink>
+              </Link>
             ))}
           </div>
         )}
