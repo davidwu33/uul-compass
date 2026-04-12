@@ -323,6 +323,12 @@ export const valueStatusEnum = pgEnum("value_status", [
   "captured",
 ]);
 
+// ─── Growth Priorities ─────────────────────────────────────────
+export const growthPriorityStatusEnum = pgEnum("growth_priority_status", [
+  "active",
+  "planned",
+]);
+
 // ─── Risks ─────────────────────────────────────────────────────
 export const riskSeverityEnum = pgEnum("risk_severity", [
   "high",

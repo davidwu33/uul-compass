@@ -100,6 +100,16 @@ export interface ValueInitiative {
   workstream?: string;
 }
 
+export interface GrowthPriority {
+  id: string;
+  name: string;
+  description: string;
+  status: "active" | "planned";
+  icon: string;
+  sortOrder: number;
+  metrics: Array<{ label: string; value: string }>;
+}
+
 export interface ValueSnapshot {
   month: string; // e.g., "Apr 2026"
   planned: number;

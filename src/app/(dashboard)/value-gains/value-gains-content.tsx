@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/context";
-import type { ValueInitiative, ValueSnapshot } from "@/lib/data";
+import type { ValueInitiative, ValueSnapshot, WorkstreamData, UserOption, GrowthPriority } from "@/lib/data";
+import type { CurrentUser } from "@/lib/supabase/get-current-user";
+import { InitiativeModal } from "@/components/initiative-modal";
+import { GrowthPriorityModal } from "@/components/growth-priority-modal";
 
 function formatUsd(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
@@ -23,93 +27,57 @@ const statusLabelKey: Record<string, "growth_statusPlanned" | "growth_statusInPr
   captured: "growth_statusCaptured",
 };
 
-const growthPriorities = [
-  {
-    id: "gp-aidc",
-    name: "AIDC & Energy Infrastructure",
-    description: "Data center buildout logistics — transformers, switchgear, GPU racks, cooling systems, BESS. Speed to power is the competitive moat.",
-    status: "active" as const,
-    icon: "bolt",
-    metrics: [
-      { label: "Pipeline", value: "3 prospects" },
-      { label: "Avg Deal Size", value: "$2-5M" },
-      { label: "Win Rate", value: "TBD" },
-    ],
-  },
-  {
-    id: "gp-new-customers",
-    name: "New Key Customers",
-    description: "Land high-margin, high-velocity accounts. Focus on PE-backed AIDC developers, advanced manufacturing, and energy transition companies.",
-    status: "active" as const,
-    icon: "group_add",
-    metrics: [
-      { label: "Targets Identified", value: "20" },
-      { label: "Active Outreach", value: "4" },
-      { label: "Closed", value: "0" },
-    ],
-  },
-  {
-    id: "gp-cross-sell",
-    name: "Cross-Sell Existing Accounts",
-    description: "Existing customers only use 1-2 services. Map all capabilities to customer needs and expand wallet share.",
-    status: "planned" as const,
-    icon: "swap_horiz",
-    metrics: [
-      { label: "Accounts Mapped", value: "0 / 20" },
-      { label: "Revenue Uplift Target", value: "10-20%" },
-      { label: "Campaign Launch", value: "Phase 2" },
-    ],
-  },
-  {
-    id: "gp-pricing",
-    name: "Pricing Optimization",
-    description: "Audit legacy pricing, implement surcharges, correct below-cost accounts. 1% pricing improvement = 6% profit improvement in logistics.",
-    status: "active" as const,
-    icon: "price_change",
-    metrics: [
-      { label: "Audit Progress", value: "In Progress" },
-      { label: "Corrections Applied", value: "0" },
-      { label: "Impact Target", value: "+3-5% revenue" },
-    ],
-  },
-  {
-    id: "gp-regional",
-    name: "New Regional Markets",
-    description: "Mexico, Indonesia & Malaysia, Nordic Europe — new offices to capture nearshoring, ASEAN growth, and European energy infrastructure demand.",
-    status: "planned" as const,
-    icon: "public",
-    metrics: [
-      { label: "Markets", value: "4 regions" },
-      { label: "Offices Opened", value: "0 / 4" },
-      { label: "Timeline", value: "Phase 2-3" },
-    ],
-  },
-];
-
 interface ValueGainsContentProps {
   initiatives: ValueInitiative[];
   snapshots: ValueSnapshot[];
+  workstreams: WorkstreamData[];
+  userOptions: UserOption[];
+  currentUser: CurrentUser | null;
+  growthPriorities: GrowthPriority[];
 }
 
-export function ValueGainsContent({ initiatives, snapshots }: ValueGainsContentProps) {
+export function ValueGainsContent({ initiatives, snapshots, workstreams, userOptions, currentUser, growthPriorities }: ValueGainsContentProps) {
   const { t } = useLanguage();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingInitiative, setEditingInitiative] = useState<ValueInitiative | null>(null);
+  const [gpModalOpen, setGpModalOpen] = useState(false);
+  const [editingPriority, setEditingPriority] = useState<GrowthPriority | null>(null);
+
+  const canWrite = !!currentUser && (currentUser.isAdmin || currentUser.isContributor);
+
+  function openCreate() { setEditingInitiative(null); setModalOpen(true); }
+  function openEdit(init: ValueInitiative) { setEditingInitiative(init); setModalOpen(true); }
+  function openGpCreate() { setEditingPriority(null); setGpModalOpen(true); }
+  function openGpEdit(gp: GrowthPriority) { setEditingPriority(gp); setGpModalOpen(true); }
 
   const totalPlanned = initiatives.reduce((s, i) => s + i.plannedImpact, 0);
   const totalCaptured = initiatives.reduce((s, i) => s + i.capturedImpact, 0);
   const revenueInitiatives = initiatives.filter((i) => i.category === "revenue_growth");
   const revenueTotal = revenueInitiatives.reduce((s, i) => s + i.plannedImpact, 0);
   const activeCount = growthPriorities.filter((g) => g.status === "active").length;
+  const totalGpCount = growthPriorities.length;
 
   return (
     <div className="space-y-8">
       {/* ── Header ──────────────────────────────────────── */}
-      <div>
-        <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-slate-100">
-          {t("growth_title")}
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          {t("growth_subtitle")}
-        </p>
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-slate-100">
+            {t("growth_title")}
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            {t("growth_subtitle")}
+          </p>
+        </div>
+        {canWrite && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#b4c5ff]/15 text-[#b4c5ff] border border-[#b4c5ff]/30 text-sm font-medium hover:bg-[#b4c5ff]/25 transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            New Initiative
+          </button>
+        )}
       </div>
 
       {/* ── Top KPIs ────────────────────────────────────── */}
@@ -132,16 +100,31 @@ export function ValueGainsContent({ initiatives, snapshots }: ValueGainsContentP
         <div className="rounded-lg bg-[#131b2d] border-t-2 border-[#dfc299] p-4 flex flex-col gap-2">
           <span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">{t("growth_growthPriorities")}</span>
           <p className="text-2xl font-light tabular-nums text-[#b4c5ff]">{activeCount}</p>
-          <p className="text-[11px] text-slate-500">{t("growth_activeOf")} {growthPriorities.length}</p>
+          <p className="text-[11px] text-slate-500">{t("growth_activeOf")} {totalGpCount}</p>
         </div>
       </div>
 
       {/* ── Growth Priorities ───────────────────────────── */}
       <div>
-        <h2 className="font-serif text-2xl text-white mb-5">{t("growth_growthPriorities")}</h2>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-serif text-2xl text-white">{t("growth_growthPriorities")}</h2>
+          {canWrite && (
+            <button
+              onClick={openGpCreate}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#b4c5ff]/10 text-[#b4c5ff] border border-[#b4c5ff]/25 text-xs font-medium hover:bg-[#b4c5ff]/20 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              New Priority
+            </button>
+          )}
+        </div>
         <div className="space-y-4">
           {growthPriorities.map((gp) => (
-            <div key={gp.id} className="rounded-lg bg-[#131b2d] p-5">
+            <div
+              key={gp.id}
+              onClick={() => canWrite && openGpEdit(gp)}
+              className={`rounded-lg bg-[#131b2d] p-5 ${canWrite ? "cursor-pointer hover:bg-[#171f32] transition-colors" : ""}`}
+            >
               <div className="flex items-start gap-4">
                 <div className="shrink-0 w-10 h-10 rounded-lg bg-[#1a2744] flex items-center justify-center">
                   <span className="material-symbols-outlined text-[#b4c5ff] text-xl">{gp.icon}</span>
@@ -169,6 +152,9 @@ export function ValueGainsContent({ initiatives, snapshots }: ValueGainsContentP
               </div>
             </div>
           ))}
+          {growthPriorities.length === 0 && (
+            <p className="text-sm text-slate-600 italic py-4">No growth priorities yet.</p>
+          )}
         </div>
       </div>
 
@@ -177,7 +163,7 @@ export function ValueGainsContent({ initiatives, snapshots }: ValueGainsContentP
         <h2 className="font-serif text-2xl text-white mb-5">{t("growth_valueInitiatives")}</h2>
         <div className="space-y-2">
           {initiatives.map((init) => (
-            <div key={init.id} className="flex items-center gap-4 rounded-lg bg-[#131b2d] px-4 py-3 hover:bg-[#171f32] transition-colors">
+            <div key={init.id} onClick={() => canWrite && openEdit(init)} className={`flex items-center gap-4 rounded-lg bg-[#131b2d] px-4 py-3 hover:bg-[#171f32] transition-colors ${canWrite ? "cursor-pointer" : ""}`}>
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#222a3d] text-[10px] font-medium text-slate-300 shrink-0">
                 {init.owner.initials}
               </div>
@@ -247,6 +233,24 @@ export function ValueGainsContent({ initiatives, snapshots }: ValueGainsContentP
           );
         })()}
       </div>
+      {currentUser && (
+        <InitiativeModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          initiative={editingInitiative}
+          workstreams={workstreams}
+          userOptions={userOptions}
+          currentUser={currentUser}
+        />
+      )}
+      {currentUser && (
+        <GrowthPriorityModal
+          open={gpModalOpen}
+          onClose={() => setGpModalOpen(false)}
+          priority={editingPriority}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 }

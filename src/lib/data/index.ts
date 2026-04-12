@@ -11,6 +11,7 @@ export type {
   RiskData,
   ValueInitiative,
   ValueSnapshot,
+  GrowthPriority,
   MetricData,
   PillarMetric,
   PillarSubItem,
@@ -34,6 +35,7 @@ import {
   risks as risksTable,
   valueInitiatives,
   valueSnapshots as valueSnapshotsTable,
+  growthPriorities as growthPrioritiesTable,
   users,
   taskMeetings,
   meetingNotes,
@@ -54,6 +56,7 @@ import type {
   RiskData,
   ValueInitiative,
   ValueSnapshot,
+  GrowthPriority,
 } from "./types";
 import {
   demoVerticals, demoReps, demoAlerts, demoPipelineStages,
@@ -363,6 +366,23 @@ export async function getValueSnapshots(): Promise<ValueSnapshot[]> {
       planned: Math.round((r.plannedCents ?? 0) / 100),
       captured: Math.round((r.capturedCents ?? 0) / 100),
     }));
+}
+
+export async function getGrowthPriorities(): Promise<GrowthPriority[]> {
+  const rows = await db
+    .select()
+    .from(growthPrioritiesTable)
+    .orderBy(asc(growthPrioritiesTable.sortOrder));
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    description: r.description ?? "",
+    status: r.status as GrowthPriority["status"],
+    icon: r.icon,
+    sortOrder: r.sortOrder,
+    metrics: (r.metrics as Array<{ label: string; value: string }>) ?? [],
+  }));
 }
 
 export async function getCurrentDay(): Promise<number> {
