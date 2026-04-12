@@ -308,7 +308,7 @@ export function TaskDetailContent({
   const [pending, startTransition] = useTransition();
 
   const canWrite = !!currentUser && (currentUser.isAdmin || currentUser.isContributor);
-  const canDelete = !!currentUser && currentUser.isAdmin;
+  const canDelete = !!currentUser && (currentUser.isAdmin || currentUser.id === task.assigneeId);
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
