@@ -27,6 +27,7 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
   const allNav = [
     { labelKey: "nav_home" as const, icon: "dashboard", href: "/" },
     { labelKey: "nav_plan" as const, icon: "event_note", href: "/plan" },
+    { labelKey: "nav_decisions" as const, icon: "gavel", href: "/decisions" },
     { labelKey: "nav_growth" as const, icon: "insights", href: "/value-gains" },
     { labelKey: "nav_sales" as const, icon: "storefront", href: "/sales" },
     { labelKey: "nav_risks" as const, icon: "warning", href: "/risks" },

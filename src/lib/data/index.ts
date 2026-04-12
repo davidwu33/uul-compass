@@ -644,6 +644,53 @@ export async function getTaskActionItems(taskId: string): Promise<TaskActionItem
   }));
 }
 
+export type MeetingData = {
+  id: string;
+  title: string;
+  meetingDate: string;
+  meetingType: string | null;
+  decisions: string[];
+  attendees: { name: string; initials: string }[];
+};
+
+export async function getMeetings(): Promise<MeetingData[]> {
+  const rows = await db
+    .select({
+      id: meetingNotes.id,
+      title: meetingNotes.title,
+      meetingDate: meetingNotes.meetingDate,
+      meetingType: meetingNotes.meetingType,
+      decisions: meetingNotes.decisions,
+    })
+    .from(meetingNotes)
+    .orderBy(desc(meetingNotes.meetingDate));
+
+  if (rows.length === 0) return [];
+
+  const meetingIds = rows.map((r) => r.id);
+  const attendeeRows = await db
+    .select({ meetingId: meetingAttendees.meetingId, fullName: users.fullName })
+    .from(meetingAttendees)
+    .innerJoin(users, eq(meetingAttendees.userId, users.id))
+    .where(inArray(meetingAttendees.meetingId, meetingIds));
+
+  const byMeeting = new Map<string, { name: string; initials: string }[]>();
+  for (const a of attendeeRows) {
+    const list = byMeeting.get(a.meetingId!) ?? [];
+    list.push({ name: a.fullName, initials: makeInitials(a.fullName) });
+    byMeeting.set(a.meetingId!, list);
+  }
+
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    meetingDate: r.meetingDate,
+    meetingType: r.meetingType,
+    decisions: (r.decisions as string[]) ?? [],
+    attendees: byMeeting.get(r.id) ?? [],
+  }));
+}
+
 export function getSalesData() {
   return {
     verticals: demoVerticals,
