@@ -7,3 +7,4 @@ export * from "./integration";
 export * from "./governance";
 export * from "./value-gains";
 export * from "./risks";
+export * from "./ai";

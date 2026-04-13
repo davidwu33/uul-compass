@@ -341,3 +341,21 @@ export const riskStatusEnum = pgEnum("risk_status", [
   "mitigating",
   "resolved",
 ]);
+
+// ─── AI Chat ───────────────────────────────────────────────────
+export const chatRoleEnum = pgEnum("chat_role", [
+  "user",
+  "assistant",
+  "system",
+  "tool_call",
+  "tool_result",
+]);
+
+export const chatStatusEnum = pgEnum("chat_status", ["active", "archived"]);
+
+export const draftStatusEnum = pgEnum("draft_status", [
+  "pending",
+  "approved",
+  "edited",
+  "discarded",
+]);
