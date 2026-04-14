@@ -39,7 +39,7 @@ const ALERT_STYLES: Record<string, { border: string; bg: string; icon: string }>
   success: { border: "border-emerald-400", bg: "bg-emerald-400/5", icon: "check_circle" },
 };
 
-export function SalesContent({ data }: { data: SalesData }) {
+export function SalesContent({ data, hideHeader }: { data: SalesData; hideHeader?: boolean }) {
   const [activeTab, setActiveTab] = useState<"pipeline" | "reps" | "forecast">("pipeline");
   const { t } = useLanguage();
 
@@ -55,14 +55,16 @@ export function SalesContent({ data }: { data: SalesData }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-white">
-          {t("sales_title")}
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          {t("sales_subtitle")}
-        </p>
-      </div>
+      {!hideHeader && (
+        <div>
+          <h1 className="font-serif text-3xl lg:text-4xl font-light tracking-tight text-white">
+            {t("sales_title")}
+          </h1>
+          <p className="mt-2 text-sm text-slate-400">
+            {t("sales_subtitle")}
+          </p>
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="flex gap-1 bg-[#131b2d] rounded-lg p-1 w-fit">

@@ -40,7 +40,7 @@ interface PlanContentProps {
   userOptions: UserOption[];
 }
 
-const STATUS_CONFIG: Record<string, { color: string; icon: string; label: string; key: "status_blocked" | "status_inProgress" | "status_todo" | "status_done" }> = {
+export const STATUS_CONFIG: Record<string, { color: string; icon: string; label: string; key: "status_blocked" | "status_inProgress" | "status_todo" | "status_done" }> = {
   blocked:     { color: "text-red-400",      icon: "block",        label: "Blocked",     key: "status_blocked" },
   in_progress: { color: "text-[#b4c5ff]",   icon: "play_circle",  label: "In Progress", key: "status_inProgress" },
   todo:        { color: "text-slate-500",    icon: "circle",       label: "To Do",       key: "status_todo" },
@@ -407,7 +407,7 @@ export function PlanContent({
 }
 
 // ─── Task Row ───────────────────────────────────────────────────
-function TaskRow({
+export function TaskRow({
   task,
   onEdit,
 }: {
@@ -446,7 +446,7 @@ function TaskRow({
 }
 
 // ─── Board Card (Kanban) ────────────────────────────────────────
-function BoardCard({
+export function BoardCard({
   task,
   onEdit,
 }: {

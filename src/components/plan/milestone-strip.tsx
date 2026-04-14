@@ -1,3 +1,4 @@
+// TODO: Unused — no imports found. Safe to delete.
 import { Diamond } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MilestoneData } from "@/lib/data/types";

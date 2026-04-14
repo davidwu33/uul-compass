@@ -15,7 +15,7 @@ import {
   carrierContracts,
   users,
 } from "@/db/schema";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 
 export type OpportunityListItem = {
   id: string;
@@ -245,7 +245,7 @@ export const getPipelineSummary = cache(
           and(
             inArray(demandSignals.entityId, accessibleEntityIds),
             isNull(demandSignals.deletedAt),
-            sql`${demandSignals.expectedStartDate} <= ${ninetyDaysFromNow}`,
+            lte(demandSignals.expectedStartDate, ninetyDaysFromNow),
           ),
         ),
       db

@@ -1,3 +1,4 @@
+// TODO: Unused — no imports found. Safe to delete.
 "use client";
 
 import { useState } from "react";

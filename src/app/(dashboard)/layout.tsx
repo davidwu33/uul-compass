@@ -5,6 +5,7 @@ import { ChatProvider } from "@/components/ai/chat-provider";
 import { ChatFab } from "@/components/ai/chat-fab";
 import { ChatPanel } from "@/components/ai/chat-panel";
 import { PageBridgeProvider } from "@/lib/ai/page-bridge";
+import { FeedbackButton } from "@/components/shared/feedback-button";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
             </NavShell>
             <ChatFab />
             <ChatPanel />
+            <FeedbackButton />
           </div>
         </PageBridgeProvider>
       </ChatProvider>

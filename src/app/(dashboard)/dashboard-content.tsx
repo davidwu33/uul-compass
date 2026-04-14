@@ -1,8 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n/context";
-import type { PhaseData, DecisionGate, TaskData, FinancialPulseMetric, PillarMetric } from "@/lib/data";
+import { TaskModal } from "@/components/task-modal";
+import { TaskRow } from "./plan/plan-content";
+import { OverdueCard, WeekCard, groupTasks } from "./my-tasks/my-tasks-content";
+import type {
+  PhaseData,
+  DecisionGate,
+  TaskData,
+  FinancialPulseMetric,
+  PillarMetric,
+  WorkstreamData,
+  UserOption,
+} from "@/lib/data";
+import type { CurrentUser } from "@/lib/supabase/get-current-user";
+import type { TranslationKey } from "@/lib/i18n/translations";
+
+// ─── Types ───────────────────────────────────────────────────────
 
 interface DashboardContentProps {
   currentDay: number;
@@ -22,7 +39,14 @@ interface DashboardContentProps {
   }[];
   financialPulse: FinancialPulseMetric[];
   pillars: PillarMetric[];
+  myTasks: TaskData[];
+  allTasks: TaskData[];
+  workstreams: WorkstreamData[];
+  currentUser: CurrentUser | null;
+  userOptions: UserOption[];
 }
+
+// ─── Shared display constants ─────────────────────────────────────
 
 const STATUS_DOT: Record<string, string> = {
   green: "bg-emerald-400",
@@ -44,6 +68,28 @@ const TREND_ICONS: Record<string, { icon: string; color: string }> = {
   flat: { icon: "trending_flat", color: "text-slate-500" },
 };
 
+const PRIORITY_ORDER: Record<string, number> = {
+  critical: 0, high: 1, medium: 2, low: 3,
+};
+
+const PRIORITY_CONFIG: Record<string, { key: TranslationKey; text: string; border: string; opacity: string }> = {
+  critical: { key: "priority_critical", text: "text-red-400",    border: "border-red-400",    opacity: "" },
+  high:     { key: "priority_high",     text: "text-amber-400",  border: "border-amber-400",  opacity: "" },
+  medium:   { key: "priority_medium",   text: "text-slate-400",  border: "border-slate-600",  opacity: "" },
+  low:      { key: "priority_low",      text: "text-slate-500",  border: "border-slate-700",  opacity: "opacity-70" },
+};
+
+const WORKSTREAM_KEYS: Record<string, TranslationKey> = {
+  "Finance": "ws_Finance",
+  "Operations": "ws_Operations",
+  "Sales": "ws_Sales",
+  "Brand & Marketing": "ws_BrandMarketing",
+  "Technology & AI": "ws_TechnologyAI",
+  "Organization & HR": "ws_OrgHR",
+};
+
+// ─── Main component ───────────────────────────────────────────────
+
 export function DashboardContent({
   currentDay,
   stats,
@@ -52,10 +98,60 @@ export function DashboardContent({
   attentionItems,
   financialPulse,
   pillars,
+  myTasks,
+  allTasks,
+  workstreams,
+  currentUser,
+  userOptions,
 }: DashboardContentProps) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
+  const router = useRouter();
   const completionPct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
   const daysRemaining = Math.max(0, 100 - currentDay);
+
+  // ── Project Tasks state ──────────────────────────────────────
+  const [activePhaseNum, setActivePhaseNum] = useState<1 | 2 | 3>(1);
+  const [activeWorkstream, setActiveWorkstream] = useState<string | null>(null);
+  const [showDone, setShowDone] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const canWrite = currentUser?.isAdmin || currentUser?.isContributor;
+
+  function openEdit(task: TaskData) {
+    router.push(`/tasks/${task.id}`);
+  }
+
+  // ── My Queue ─────────────────────────────────────────────────
+  const { overdue: myOverdue, thisWeek: myThisWeek, later: myLater } = groupTasks(myTasks);
+  const myActiveCount = myTasks.filter((t) => t.status !== "done").length;
+
+  // ── Project Tasks ─────────────────────────────────────────────
+  let filtered = allTasks.filter((t) => t.phase === activePhaseNum);
+  if (activeWorkstream) {
+    filtered = filtered.filter((t) => t.workstream === activeWorkstream);
+  }
+  const activeTasks = filtered.filter((t) => t.status !== "done");
+  const doneTasks = filtered.filter((t) => t.status === "done");
+
+  const priorityGroups = (["critical", "high", "medium", "low"] as const).map((priority) => {
+    const groupTasks2 = activeTasks
+      .filter((t) => t.priority === priority)
+      .sort((a, b) => {
+        const statusOrder: Record<string, number> = { blocked: 0, in_progress: 1, review: 2, todo: 3 };
+        return (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
+      });
+    return { priority, tasks: groupTasks2 };
+  }).filter((g) => g.tasks.length > 0);
+
+  // Workstream health data
+  const wsHealth = workstreams.map((ws) => {
+    const wsTasks = allTasks.filter((t) => t.workstream === ws.name && t.phase === activePhaseNum);
+    const done = wsTasks.filter((t) => t.status === "done").length;
+    const blocked = wsTasks.filter((t) => t.status === "blocked").length;
+    const total = wsTasks.length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    return { ...ws, done, blocked, total, pct };
+  }).filter((ws) => ws.total > 0);
 
   return (
     <div className="space-y-10">
@@ -64,16 +160,10 @@ export function DashboardContent({
         <div className="lg:col-span-7 space-y-6">
           <div>
             <h1 className="font-serif text-5xl lg:text-6xl font-light tracking-tight text-white leading-[1.1]">
-              {lang === "zh" ? (
-                <>{t("dash_dayPrefix")} {currentDay}<span className="text-slate-500"> {t("dash_of100")}</span></>
-              ) : (
-                <>{t("dash_dayPrefix")} {currentDay}<span className="text-slate-500"> {t("dash_of100")}</span></>
-              )}
+              {t("dash_dayPrefix")} {currentDay}<span className="text-slate-500"> {t("dash_of100")}</span>
             </h1>
             <p className="mt-3 text-lg text-[#dfc299] font-serif italic">
-              {lang === "zh"
-                ? `${daysRemaining} ${t("dash_daysRemaining")}`
-                : `${daysRemaining} ${t("dash_daysRemaining")}`}
+              {daysRemaining} {t("dash_daysRemaining")}
             </p>
           </div>
 
@@ -112,7 +202,41 @@ export function DashboardContent({
         </div>
       </section>
 
-      {/* ── Section 2: Phase Timeline ──────────────────────── */}
+      {/* ── Section 2: My Queue ──────────────────────────────── */}
+      <section>
+        <div className="flex items-center gap-2 mb-5">
+          <span className="material-symbols-outlined text-[#b4c5ff] text-lg">assignment_turned_in</span>
+          <h2 className="font-serif text-2xl text-white">{t("dash_myQueue")}</h2>
+          {myActiveCount > 0 && (
+            <span className="ml-2 rounded-full bg-[#b4c5ff]/15 px-2.5 py-0.5 text-[10px] font-semibold text-[#b4c5ff]">
+              {myActiveCount}
+            </span>
+          )}
+        </div>
+
+        {myTasks.length === 0 ? (
+          <div className="rounded-lg bg-[#131b2d] p-5 text-sm text-slate-500">
+            {t("dash_noAssignedTasks")}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {myOverdue.map((task) => <OverdueCard key={task.id} task={task} />)}
+            {myThisWeek.map((task) => <WeekCard key={task.id} task={task} />)}
+            {myLater.length > 0 && (
+              <p className="text-center text-[11px] text-slate-600 py-1">
+                + {myLater.length} {t("dash_moreLater")}
+              </p>
+            )}
+            {myOverdue.length === 0 && myThisWeek.length === 0 && myLater.length === 0 && (
+              <div className="rounded-lg bg-[#131b2d] p-5 text-sm text-slate-500">
+                {t("dash_noAssignedTasks")}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ── Section 3: Phase Timeline ──────────────────────── */}
       <section className="rounded-lg bg-[#131b2d] p-5">
         <div className="flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-[#dfc299] text-lg">timeline</span>
@@ -177,7 +301,7 @@ export function DashboardContent({
         </div>
       </section>
 
-      {/* ── Section 3: Needs Attention ─────────────────────── */}
+      {/* ── Section 4: Needs Attention ─────────────────────── */}
       <section>
         <div className="flex items-center gap-2 mb-5">
           <span className="material-symbols-outlined text-amber-400 text-lg">priority_high</span>
@@ -232,7 +356,222 @@ export function DashboardContent({
         )}
       </section>
 
-      {/* ── Section 4: Financial Pulse ─────────────────────── */}
+      {/* ── Section 5: Project Tasks ───────────────────────── */}
+      <section>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-slate-400 text-lg">task_alt</span>
+            <h2 className="font-serif text-2xl text-white">{t("dash_projectTasks")}</h2>
+          </div>
+          {canWrite && (
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-[#1a2744] hover:bg-[#1f3060] border border-[#b4c5ff]/20 text-[#b4c5ff] text-xs font-medium px-4 py-2 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              {t("tasks_newTask")}
+            </button>
+          )}
+        </div>
+
+        {/* Workstream health grid */}
+        {wsHealth.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+            {/* All pill */}
+            <button
+              onClick={() => setActiveWorkstream(null)}
+              className={`rounded-lg p-3 border text-left transition-all ${
+                activeWorkstream === null
+                  ? "bg-[#1a2744] border-[#b4c5ff]/30"
+                  : "bg-[#131b2d] border-slate-700/40 hover:bg-[#171f32]"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-[10px] uppercase tracking-widest font-semibold ${
+                  activeWorkstream === null ? "text-[#b4c5ff]" : "text-slate-400"
+                }`}>
+                  {t("dash_allWorkstreams")}
+                </span>
+                <span className="text-[10px] text-slate-500 tabular-nums">
+                  {allTasks.filter((t) => t.phase === activePhaseNum && t.status === "done").length}/
+                  {allTasks.filter((t) => t.phase === activePhaseNum).length}
+                </span>
+              </div>
+              <div className="h-1 rounded-full bg-[#171f32] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#b4c5ff]"
+                  style={{
+                    width: `${allTasks.filter((t) => t.phase === activePhaseNum).length > 0
+                      ? Math.round((allTasks.filter((t) => t.phase === activePhaseNum && t.status === "done").length / allTasks.filter((t) => t.phase === activePhaseNum).length) * 100)
+                      : 0}%`,
+                  }}
+                />
+              </div>
+            </button>
+
+            {wsHealth.map((ws) => (
+              <button
+                key={ws.id}
+                onClick={() => setActiveWorkstream(activeWorkstream === ws.name ? null : ws.name)}
+                className={`rounded-lg p-3 border text-left transition-all ${
+                  activeWorkstream === ws.name
+                    ? "bg-[#1a2744] border-[#b4c5ff]/30"
+                    : "bg-[#131b2d] border-slate-700/40 hover:bg-[#171f32]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: ws.color }} />
+                    <span className="text-[10px] uppercase tracking-widest font-semibold text-slate-400 truncate">
+                      {WORKSTREAM_KEYS[ws.name] ? t(WORKSTREAM_KEYS[ws.name]) : ws.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {ws.blocked > 0 && (
+                      <span className="text-[9px] font-semibold text-red-400 bg-red-400/10 rounded px-1.5 py-0.5">
+                        {ws.blocked} blocked
+                      </span>
+                    )}
+                    <span className="text-[10px] text-slate-500 tabular-nums">{ws.done}/{ws.total}</span>
+                  </div>
+                </div>
+                <div className="h-1 rounded-full bg-[#171f32] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[#b4c5ff] transition-all"
+                    style={{ width: `${Math.max(ws.pct, ws.total > 0 ? 1 : 0)}%` }}
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Phase tabs */}
+        <div className="rounded-lg bg-[#131b2d] border border-slate-700/40 overflow-hidden mb-5">
+          <div className="flex">
+            {phases.map((phase) => {
+              const isSelected = phase.phaseNumber === activePhaseNum;
+              const phaseTasks = allTasks.filter((t) => t.phase === phase.phaseNumber);
+              const phaseDone = phaseTasks.filter((t) => t.status === "done").length;
+              return (
+                <button
+                  key={phase.id}
+                  onClick={() => { setActivePhaseNum(phase.phaseNumber as 1 | 2 | 3); setShowDone(false); }}
+                  className={`flex-1 flex flex-col items-center py-3 px-2 transition-colors ${
+                    isSelected
+                      ? "bg-[#1a2744] border-b-2 border-[#b4c5ff]"
+                      : "hover:bg-[#171f32] border-b-2 border-transparent"
+                  }`}
+                >
+                  <span className={`text-[10px] uppercase tracking-wider font-semibold ${
+                    isSelected ? "text-[#b4c5ff]" : "text-slate-500"
+                  }`}>
+                    {t("plan_phase")} {phase.phaseNumber}
+                  </span>
+                  <span className={`text-xs mt-0.5 ${isSelected ? "text-slate-300" : "text-slate-600"}`}>
+                    {phase.name}
+                  </span>
+                  <span className="text-[10px] text-slate-600 mt-0.5 tabular-nums">
+                    {phaseDone}/{phaseTasks.length} {t("plan_done")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Task list (priority-grouped) */}
+        <div className="space-y-5">
+          {priorityGroups.map((group) => {
+            const cfg = PRIORITY_CONFIG[group.priority];
+            return (
+              <div key={group.priority}>
+                <div className={`flex items-center gap-3 mb-3 border-l-2 ${cfg.border} pl-3`}>
+                  <span className={`text-[10px] uppercase tracking-widest font-semibold ${cfg.text}`}>
+                    {t(cfg.key)}
+                  </span>
+                  <span className="text-[10px] text-slate-600 tabular-nums">{group.tasks.length}</span>
+                </div>
+                <div className={`space-y-1.5 ${cfg.opacity}`}>
+                  {group.tasks.map((task) => (
+                    <TaskRow key={task.id} task={task} onEdit={openEdit} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {priorityGroups.length === 0 && doneTasks.length === 0 && (
+            <div className="rounded-lg bg-[#131b2d] p-8 text-center text-sm text-slate-500">
+              {t("plan_noTasks")}{activeWorkstream ? ` ${t("plan_noTasksFor")} ${activeWorkstream}` : ""}.
+            </div>
+          )}
+
+          {doneTasks.length > 0 && (
+            <div className="pt-2">
+              <button
+                onClick={() => setShowDone(!showDone)}
+                className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">
+                  {showDone ? "expand_less" : "expand_more"}
+                </span>
+                {doneTasks.length} {t("plan_completedCount")}
+              </button>
+              {showDone && (
+                <div className="space-y-1.5 mt-2 opacity-50">
+                  {doneTasks.map((task) => (
+                    <TaskRow key={task.id} task={task} onEdit={openEdit} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Decision Gates for active phase */}
+        {(() => {
+          const phaseGates = gates.filter((g) => g.phaseId === `phase-${activePhaseNum}`);
+          if (phaseGates.length === 0) return null;
+          return (
+            <div className="mt-8">
+              <h3 className="text-[10px] tracking-widest uppercase text-slate-500 font-semibold mb-3">
+                {t("plan_decisionGates")}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {phaseGates.map((gate) => {
+                  const isPassed = gate.status === "passed";
+                  return (
+                    <div
+                      key={gate.id}
+                      className={`rounded-lg border p-4 ${
+                        isPassed
+                          ? "border-emerald-500/30 bg-emerald-500/5"
+                          : "border-[#dfc299]/20 bg-[#131b2d]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`material-symbols-outlined text-sm ${
+                          isPassed ? "text-emerald-400" : "text-[#dfc299]"
+                        }`}>
+                          {isPassed ? "check_circle" : "door_front"}
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-500 tabular-nums">
+                          {t("plan_day")} {gate.dayNumber} · {gate.targetDate}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-200">{gate.name}</p>
+                      <p className="text-[11px] text-slate-500 mt-1">{gate.owner}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+      </section>
+
+      {/* ── Section 6: Financial Pulse ─────────────────────── */}
       <section>
         <div className="flex items-baseline justify-between mb-5">
           <h2 className="font-serif text-2xl text-white">{t("dash_financialPulse")}</h2>
@@ -260,7 +599,7 @@ export function DashboardContent({
         </div>
       </section>
 
-      {/* ── Section 5: Strategic Pillars ───────────────────── */}
+      {/* ── Section 7: Strategic Pillars ───────────────────── */}
       <section>
         <div className="flex items-baseline justify-between mb-5">
           <h2 className="font-serif text-2xl text-white">{t("dash_strategicPillars")}</h2>
@@ -305,6 +644,18 @@ export function DashboardContent({
           ))}
         </div>
       </section>
+
+      {/* ── Task Modal ─────────────────────────────────────── */}
+      {currentUser && (
+        <TaskModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          task={null}
+          workstreams={workstreams}
+          userOptions={userOptions}
+          currentUser={currentUser}
+        />
+      )}
     </div>
   );
 }

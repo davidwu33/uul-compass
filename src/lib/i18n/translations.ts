@@ -9,6 +9,8 @@ const en = {
   nav_risks: "Risks",
   nav_growth: "Initiatives",
   nav_sales: "Sales",
+  nav_pipeline: "Pipeline",
+  nav_chat: "Compass AI",
   nav_decisions: "Decisions",
   nav_organization: "Organization",
   nav_support: "Support",
@@ -36,6 +38,11 @@ const en = {
   dash_liveData: "Live Data",
   dash_strategicPillars: "Strategic Pillars",
   dash_100dayPriorities: "100-Day Priorities",
+  dash_myQueue: "My Queue",
+  dash_noAssignedTasks: "No tasks assigned to you",
+  dash_moreLater: "more scheduled later",
+  dash_projectTasks: "Project Tasks",
+  dash_allWorkstreams: "All",
 
   // ── Plan ─────────────────────────────────────────────────────
   plan_title: "100-Day Plan",
@@ -226,6 +233,8 @@ const zh: typeof en = {
   nav_risks: "风险",
   nav_growth: "增长",
   nav_sales: "销售",
+  nav_pipeline: "管道",
+  nav_chat: "Compass AI",
   nav_decisions: "决策",
   nav_organization: "组织架构",
   nav_support: "帮助",
@@ -253,6 +262,11 @@ const zh: typeof en = {
   dash_liveData: "实时数据",
   dash_strategicPillars: "战略支柱",
   dash_100dayPriorities: "百日重点",
+  dash_myQueue: "我的队列",
+  dash_noAssignedTasks: "暂无分配给您的任务",
+  dash_moreLater: "项稍后计划",
+  dash_projectTasks: "项目任务",
+  dash_allWorkstreams: "全部",
 
   // ── Plan ─────────────────────────────────────────────────────
   plan_title: "百日计划",

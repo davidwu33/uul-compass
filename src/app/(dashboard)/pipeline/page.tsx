@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import {
-  getOpportunities,
   getDemandSignals,
   getDemandAggregates,
   getCarrierContracts,
   getPipelineSummary,
 } from "@/lib/data/pipeline";
+import { getSalesData } from "@/lib/data";
 import { PipelineContent } from "./pipeline-content";
 
 /**
@@ -28,9 +28,8 @@ export default async function PipelinePage({
 
   const entityIds = user.accessibleEntityIds;
 
-  const [summary, opportunities, signals, aggregates, contracts] = await Promise.all([
+  const [summary, signals, aggregates, contracts] = await Promise.all([
     getPipelineSummary(entityIds),
-    getOpportunities(entityIds),
     getDemandSignals(entityIds),
     getDemandAggregates(entityIds),
     getCarrierContracts(entityIds),
@@ -40,10 +39,10 @@ export default async function PipelinePage({
     <PipelineContent
       initialTab={tab}
       summary={summary}
-      opportunities={opportunities}
       signals={signals}
       aggregates={aggregates}
       contracts={contracts}
+      salesData={getSalesData()}
       user={{ id: user.id, fullName: user.fullName, role: user.role }}
     />
   );

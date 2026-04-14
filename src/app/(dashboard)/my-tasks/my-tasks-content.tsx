@@ -37,7 +37,7 @@ function parseDate(dateStr: string): Date | null {
 }
 
 
-function isThisWeek(dateStr: string): boolean {
+export function isThisWeek(dateStr: string): boolean {
   const d = parseDate(dateStr);
   if (!d) return false;
   const now = new Date();
@@ -45,7 +45,7 @@ function isThisWeek(dateStr: string): boolean {
   return d >= now && d <= weekOut;
 }
 
-function relativeTime(dateStr: string, t: (k: Parameters<ReturnType<typeof useLanguage>["t"]>[0]) => string): string {
+export function relativeTime(dateStr: string, t: (k: Parameters<ReturnType<typeof useLanguage>["t"]>[0]) => string): string {
   const d = parseDate(dateStr);
   if (!d) return dateStr;
   const now = new Date();
@@ -59,7 +59,7 @@ function relativeTime(dateStr: string, t: (k: Parameters<ReturnType<typeof useLa
 }
 
 // ─── Grouping ─────────────────────────────────────────────────
-function groupTasks(tasks: TaskData[]) {
+export function groupTasks(tasks: TaskData[]) {
   const overdue: TaskData[] = [];
   const thisWeek: TaskData[] = [];
   const later: TaskData[] = [];
@@ -148,7 +148,7 @@ function AssigneeAvatar({ assignee }: { assignee: TaskData["assignee"] }) {
 
 // ─── Card variants ────────────────────────────────────────────
 
-function OverdueCard({ task }: { task: TaskData }) {
+export function OverdueCard({ task }: { task: TaskData }) {
   const { t } = useLanguage();
   return (
     <Link
@@ -176,7 +176,7 @@ function OverdueCard({ task }: { task: TaskData }) {
   );
 }
 
-function WeekCard({ task }: { task: TaskData }) {
+export function WeekCard({ task }: { task: TaskData }) {
   const { t } = useLanguage();
   return (
     <Link

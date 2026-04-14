@@ -7,18 +7,37 @@ import {
   getNeedsAttention,
   getUpcomingDecisions,
   getCurrentDay,
+  getTasks,
+  getWorkstreams,
+  getUsers,
 } from "@/lib/data";
+import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { DashboardContent } from "./dashboard-content";
 import { formatDueDate } from "@/lib/utils";
 
 export default async function DashboardPage() {
-  const [stats, phases, gates, attentionTasks, decisions, currentDay] = await Promise.all([
+  const [
+    stats,
+    phases,
+    gates,
+    attentionTasks,
+    decisions,
+    currentDay,
+    allTasks,
+    workstreams,
+    currentUser,
+    userOptions,
+  ] = await Promise.all([
     getTaskStats(),
     getPhases(),
     getGates(),
     getNeedsAttention(),
     getUpcomingDecisions(),
     getCurrentDay(),
+    getTasks(),
+    getWorkstreams(),
+    getCurrentUser(),
+    getUsers(),
   ]);
   const pillars = getPillarScorecard();
   const financialPulse = getFinancialPulse();
@@ -59,6 +78,10 @@ export default async function DashboardPage() {
       })),
   ];
 
+  const myTasks = currentUser
+    ? allTasks.filter((t) => t.assigneeId === currentUser.id)
+    : [];
+
   return (
     <DashboardContent
       currentDay={currentDay}
@@ -68,6 +91,11 @@ export default async function DashboardPage() {
       attentionItems={attentionItems}
       financialPulse={financialPulse}
       pillars={pillars}
+      myTasks={myTasks}
+      allTasks={allTasks}
+      workstreams={workstreams}
+      currentUser={currentUser}
+      userOptions={userOptions}
     />
   );
 }

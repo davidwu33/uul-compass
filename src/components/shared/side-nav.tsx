@@ -26,15 +26,13 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
 
   const allNav = [
     { labelKey: "nav_home" as const, icon: "dashboard", href: "/" },
-    { labelKey: "nav_plan" as const, icon: "event_note", href: "/plan" },
+    { labelKey: "nav_chat" as const, icon: "assistant", href: "/chat" },
     { labelKey: "nav_decisions" as const, icon: "gavel", href: "/decisions" },
     { labelKey: "nav_growth" as const, icon: "insights", href: "/value-gains" },
-    { labelKey: "nav_sales" as const, icon: "storefront", href: "/sales" },
+    { labelKey: "nav_pipeline" as const, icon: "timeline", href: "/pipeline" },
     { labelKey: "nav_risks" as const, icon: "warning", href: "/risks" },
     { labelKey: "nav_organization" as const, icon: "corporate_fare", href: "/settings" },
   ];
-
-  const myTasksActive = pathname.startsWith("/my-tasks");
 
   return (
     <>
@@ -80,20 +78,6 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
               </Link>
             );
           })}
-          <Link
-            href="/my-tasks"
-            onClick={onClose}
-            className={`flex items-center gap-3 px-4 py-2.5 mx-0 rounded-lg text-sm font-semibold tracking-wide transition-all active:scale-[0.97] active:opacity-75 ${
-              myTasksActive
-                ? "bg-[#b4c5ff] text-[#0b1325]"
-                : "bg-[#b4c5ff]/15 text-[#b4c5ff] border border-[#b4c5ff]/30 hover:bg-[#b4c5ff]/25"
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg" style={myTasksActive ? { fontVariationSettings: "'FILL' 1" } : undefined}>
-              assignment_turned_in
-            </span>
-            {t("nav_myTasks")}
-          </Link>
         </nav>
       </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import type { ComponentProps } from "react";
+import { SalesContent } from "@/app/(dashboard)/sales/sales-content";
 import type {
-  OpportunityListItem,
   DemandSignalListItem,
   DemandAggregate,
   CarrierContractListItem,
@@ -11,13 +12,15 @@ import type {
 
 type Tab = "sales" | "demand" | "fulfillment" | "contracts";
 
+type SalesData = ComponentProps<typeof SalesContent>["data"];
+
 type Props = {
   initialTab: string;
   summary: PipelineSummary;
-  opportunities: OpportunityListItem[];
   signals: DemandSignalListItem[];
   aggregates: DemandAggregate[];
   contracts: CarrierContractListItem[];
+  salesData: SalesData;
   user: { id: string; fullName: string; role: string };
 };
 
@@ -29,10 +32,10 @@ type Props = {
 export function PipelineContent({
   initialTab,
   summary,
-  opportunities,
   signals,
   aggregates,
   contracts,
+  salesData,
 }: Props) {
   const [tab, setTab] = useState<Tab>(
     (["sales", "demand", "fulfillment", "contracts"] as Tab[]).includes(initialTab as Tab)
@@ -84,7 +87,7 @@ export function PipelineContent({
       </section>
 
       {/* ─── Tabs ─── */}
-      <nav className="flex gap-1 border-b border-slate-800 mb-6">
+      <nav className="flex gap-1 border-b border-slate-700/40 mb-6">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -101,7 +104,7 @@ export function PipelineContent({
       </nav>
 
       {/* ─── Tab panels ─── */}
-      {tab === "sales" && <SalesTab opportunities={opportunities} />}
+      {tab === "sales" && <SalesContent data={salesData} hideHeader />}
       {tab === "demand" && <DemandTab signals={signals} aggregates={aggregates} />}
       {tab === "fulfillment" && <FulfillmentTab signals={signals.filter((s) => !s.fulfilled)} />}
       {tab === "contracts" && <ContractsTab contracts={contracts} />}
@@ -121,53 +124,11 @@ function SummaryCard({
   warning?: boolean;
 }) {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
-      <p className="text-xs uppercase tracking-widest text-slate-500 mb-2">{label}</p>
+    <div className="bg-[#131b2d] border border-slate-700/40 rounded-xl p-5">
+      <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">{label}</p>
       <p className={`font-serif text-3xl mb-1 ${warning ? "text-amber-300" : "text-blue-100"}`}>{value}</p>
       <p className="text-xs text-slate-500">{sublabel}</p>
     </div>
-  );
-}
-
-// ─── Sales tab ────────────────────────────────────────────────
-function SalesTab({ opportunities }: { opportunities: OpportunityListItem[] }) {
-  if (opportunities.length === 0) {
-    return <EmptyState message="No opportunities yet. Ask Compass to log one from your last customer call." />;
-  }
-
-  return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-800">
-          <th className="py-3 px-3">Customer</th>
-          <th className="py-3 px-3">Stage</th>
-          <th className="py-3 px-3">Salesperson</th>
-          <th className="py-3 px-3">Lane</th>
-          <th className="py-3 px-3 text-right">Volume (TEU)</th>
-          <th className="py-3 px-3 text-right">Expected Value</th>
-          <th className="py-3 px-3">Close Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {opportunities.map((o) => (
-          <tr key={o.id} className="border-b border-slate-900 hover:bg-slate-900/50">
-            <td className="py-3 px-3 text-slate-200">{o.customerName}</td>
-            <td className="py-3 px-3">
-              <StageBadge stage={o.stage} />
-            </td>
-            <td className="py-3 px-3 text-slate-400">{o.salespersonName ?? "—"}</td>
-            <td className="py-3 px-3 text-slate-400">{o.lane ?? "—"}</td>
-            <td className="py-3 px-3 text-right text-slate-300">{o.volumeTeu?.toLocaleString() ?? "—"}</td>
-            <td className="py-3 px-3 text-right text-slate-300">
-              {o.expectedValueCents ? `$${(o.expectedValueCents / 100).toLocaleString()}` : "—"}
-            </td>
-            <td className="py-3 px-3 text-slate-500">
-              {o.expectedCloseDate ? new Date(o.expectedCloseDate).toLocaleDateString() : "—"}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
 
@@ -190,7 +151,7 @@ function DemandTab({
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-800">
+              <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-700/40">
                 <th className="py-3 px-3">Lane</th>
                 <th className="py-3 px-3">Month</th>
                 <th className="py-3 px-3 text-right">Total TEU</th>
@@ -199,7 +160,7 @@ function DemandTab({
             </thead>
             <tbody>
               {aggregates.map((a) => (
-                <tr key={`${a.lane}-${a.month}`} className="border-b border-slate-900">
+                <tr key={`${a.lane}-${a.month}`} className="border-b border-slate-800/50">
                   <td className="py-3 px-3 text-slate-200">{a.lane}</td>
                   <td className="py-3 px-3 text-slate-400">{a.month}</td>
                   <td className="py-3 px-3 text-right text-blue-200 font-semibold">
@@ -222,7 +183,7 @@ function DemandTab({
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-800">
+              <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-700/40">
                 <th className="py-3 px-3">Lane</th>
                 <th className="py-3 px-3">Customer</th>
                 <th className="py-3 px-3">Salesperson</th>
@@ -233,7 +194,7 @@ function DemandTab({
             </thead>
             <tbody>
               {signals.map((s) => (
-                <tr key={s.id} className="border-b border-slate-900 hover:bg-slate-900/50">
+                <tr key={s.id} className="border-b border-slate-800/50 hover:bg-slate-900/50">
                   <td className="py-3 px-3 text-slate-200">{s.lane}</td>
                   <td className="py-3 px-3 text-slate-400">{s.customerName ?? "—"}</td>
                   <td className="py-3 px-3 text-slate-400">{s.salespersonName ?? "—"}</td>
@@ -267,7 +228,7 @@ function FulfillmentTab({ signals }: { signals: DemandSignalListItem[] }) {
       </p>
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-800">
+          <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-700/40">
             <th className="py-3 px-3">Lane</th>
             <th className="py-3 px-3">Customer</th>
             <th className="py-3 px-3">Salesperson</th>
@@ -278,7 +239,7 @@ function FulfillmentTab({ signals }: { signals: DemandSignalListItem[] }) {
         </thead>
         <tbody>
           {signals.map((s) => (
-            <tr key={s.id} className="border-b border-slate-900">
+            <tr key={s.id} className="border-b border-slate-800/50">
               <td className="py-3 px-3 text-slate-200">{s.lane}</td>
               <td className="py-3 px-3 text-slate-400">{s.customerName ?? "—"}</td>
               <td className="py-3 px-3 text-slate-400">{s.salespersonName ?? "—"}</td>
@@ -307,8 +268,9 @@ function ContractsTab({ contracts }: { contracts: CarrierContractListItem[] }) {
     <div className="space-y-6">
       {highUtil.length > 0 && (
         <div className="bg-amber-950/30 border border-amber-800/50 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-amber-300 mb-1">
-            ⚠ {highUtil.length} contract{highUtil.length > 1 ? "s" : ""} at 80%+ utilization
+          <h3 className="text-sm font-semibold text-amber-300 mb-1 flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+            {highUtil.length} contract{highUtil.length > 1 ? "s" : ""} at 80%+ utilization
           </h3>
           <p className="text-xs text-amber-200/70">
             Procurement should start negotiating MQC additions before peak season.
@@ -318,7 +280,7 @@ function ContractsTab({ contracts }: { contracts: CarrierContractListItem[] }) {
 
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-800">
+          <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-700/40">
             <th className="py-3 px-3">Carrier</th>
             <th className="py-3 px-3">Lane</th>
             <th className="py-3 px-3">Contract Code</th>
@@ -330,7 +292,7 @@ function ContractsTab({ contracts }: { contracts: CarrierContractListItem[] }) {
         </thead>
         <tbody>
           {contracts.map((c) => (
-            <tr key={c.id} className="border-b border-slate-900 hover:bg-slate-900/50">
+            <tr key={c.id} className="border-b border-slate-800/50 hover:bg-slate-900/50">
               <td className="py-3 px-3 text-slate-200">{c.carrierName}</td>
               <td className="py-3 px-3 text-slate-400">{c.lane}</td>
               <td className="py-3 px-3 text-slate-500 text-xs">{c.contractCode ?? "—"}</td>
@@ -358,23 +320,15 @@ function ContractsTab({ contracts }: { contracts: CarrierContractListItem[] }) {
 // ─── Shared bits ──────────────────────────────────────────────
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="py-16 text-center text-slate-500 text-sm">{message}</div>
-  );
-}
-
-function StageBadge({ stage }: { stage: string }) {
-  const color =
-    stage === "won"
-      ? "bg-green-900/30 text-green-300 border-green-800"
-      : stage === "lost"
-        ? "bg-slate-900 text-slate-500 border-slate-800"
-        : stage === "negotiating"
-          ? "bg-amber-900/30 text-amber-300 border-amber-800"
-          : "bg-blue-900/30 text-blue-200 border-blue-800";
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-mono uppercase tracking-wider border ${color}`}>
-      {stage}
-    </span>
+    <div className="py-20 flex flex-col items-center gap-3">
+      <span
+        className="material-symbols-outlined text-4xl text-slate-700"
+        style={{ fontVariationSettings: "'FILL' 0" }}
+      >
+        inbox
+      </span>
+      <p className="text-sm text-slate-500 max-w-sm text-center">{message}</p>
+    </div>
   );
 }
 
