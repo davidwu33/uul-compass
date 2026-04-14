@@ -10,6 +10,9 @@ export const userRoleEnum = pgEnum("user_role", [
   "manager",
   "operator",
   "sales",
+  "customer_service",
+  "procurement",
+  "operations",
   "finance",
   "compliance",
   "viewer",
@@ -340,6 +343,80 @@ export const riskStatusEnum = pgEnum("risk_status", [
   "open",
   "mitigating",
   "resolved",
+]);
+
+// ─── Handoffs ──────────────────────────────────────────────────
+export const handoffStatusEnum = pgEnum("handoff_status", [
+  "sent",
+  "seen",
+  "acknowledged",
+  "in_progress",
+  "completed",
+  "declined",
+  "cancelled",
+]);
+
+export const handoffUrgencyEnum = pgEnum("handoff_urgency", [
+  "low",
+  "medium",
+  "high",
+  "urgent",
+]);
+
+// ─── Watches & Notifications ────────────────────────────────────
+export const watchTypeEnum = pgEnum("watch_type", [
+  "any_change",
+  "major_only",
+  "mentions_only",
+]);
+
+export const notificationKindEnum = pgEnum("notification_kind", [
+  "handoff_received",
+  "handoff_status_changed",
+  "mention",
+  "watch_alert",
+  "ai_insight",
+  "system",
+]);
+
+// ─── Sales Pipeline ────────────────────────────────────────────
+export const opportunityStageEnum = pgEnum("opportunity_stage", [
+  "lead",
+  "qualified",
+  "quoted",
+  "negotiating",
+  "won",
+  "lost",
+]);
+
+export const demandConfidenceEnum = pgEnum("demand_confidence", [
+  "low",
+  "medium",
+  "high",
+]);
+
+// ─── Carrier Contracts ─────────────────────────────────────────
+export const carrierContractStatusEnum = pgEnum("carrier_contract_status", [
+  "in_negotiation",
+  "active",
+  "expired",
+  "terminated",
+]);
+
+// ─── Feedback ──────────────────────────────────────────────────
+export const feedbackTypeEnum = pgEnum("feedback_type", [
+  "bug",
+  "idea",
+  "question",
+  "praise",
+]);
+
+export const feedbackStatusEnum = pgEnum("feedback_status", [
+  "open",
+  "triaged",
+  "in_progress",
+  "resolved",
+  "wont_fix",
 ]);
 
 // ─── AI Chat ───────────────────────────────────────────────────
