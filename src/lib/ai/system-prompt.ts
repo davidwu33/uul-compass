@@ -72,34 +72,39 @@ Your role is to help the UUL team understand what's happening in the integration
 
   // ── Entity data ───────────────────────────────────────────────────────────
   if (data.currentTask) {
-    sections.push(`Current task in view:\n${JSON.stringify(data.currentTask, null, 2).slice(0, 4000)}`);
+    sections.push(`Current task in view:\n${JSON.stringify(data.currentTask).slice(0, 4000)}`);
   }
   if (data.taskMeetings?.length) {
-    sections.push(`Task meeting history (${data.taskMeetings.length} meetings):\n${JSON.stringify(data.taskMeetings, null, 2).slice(0, 2000)}`);
+    sections.push(`Task meeting history (${data.taskMeetings.length} meetings):\n${JSON.stringify(data.taskMeetings).slice(0, 2000)}`);
   }
   if (data.taskActivities?.length) {
-    sections.push(`Task activity log:\n${JSON.stringify(data.taskActivities, null, 2).slice(0, 1500)}`);
+    sections.push(`Task activity log:\n${JSON.stringify(data.taskActivities).slice(0, 1500)}`);
   }
   if (data.tasks?.length) {
-    sections.push(`All PMI tasks (${data.tasks.length} total):\n${JSON.stringify(data.tasks, null, 2).slice(0, 4000)}`);
+    const slim = data.tasks.map((t: any) => ({
+      id: t.id, code: t.code, title: t.title, status: t.status,
+      workstream: t.workstream, assignee: t.assignee, priority: t.priority,
+      dueDate: t.dueDate, progress: t.progress,
+    }));
+    sections.push(`All PMI tasks (${data.tasks.length} total):\n${JSON.stringify(slim).slice(0, 4000)}`);
   }
   if (data.workstreams?.length) {
-    sections.push(`Workstreams:\n${JSON.stringify(data.workstreams, null, 2).slice(0, 2000)}`);
+    sections.push(`Workstreams:\n${JSON.stringify(data.workstreams).slice(0, 2000)}`);
   }
   if (data.risks?.length) {
-    sections.push(`Risk register (${data.risks.length} risks):\n${JSON.stringify(data.risks, null, 2).slice(0, 3000)}`);
+    sections.push(`Risk register (${data.risks.length} risks):\n${JSON.stringify(data.risks).slice(0, 3000)}`);
   }
   if (data.initiatives?.length) {
-    sections.push(`Value initiatives (${data.initiatives.length}):\n${JSON.stringify(data.initiatives, null, 2).slice(0, 3000)}`);
+    sections.push(`Value initiatives (${data.initiatives.length}):\n${JSON.stringify(data.initiatives).slice(0, 3000)}`);
   }
   if (data.gates?.length) {
-    sections.push(`Decision gates:\n${JSON.stringify(data.gates, null, 2).slice(0, 2000)}`);
+    sections.push(`Decision gates:\n${JSON.stringify(data.gates).slice(0, 2000)}`);
   }
   if (data.taskStats) {
     sections.push(`Task stats: ${JSON.stringify(data.taskStats)}`);
   }
   if (data.needsAttention?.length) {
-    sections.push(`Needs attention (blocked/overdue): ${JSON.stringify(data.needsAttention, null, 2).slice(0, 2000)}`);
+    sections.push(`Needs attention (blocked/overdue): ${JSON.stringify(data.needsAttention).slice(0, 2000)}`);
   }
   if (data.users?.length) {
     sections.push(`Team members: ${JSON.stringify(data.users.map((u) => ({ name: u.name, role: u.role, workstream: u.workstream })))}`);

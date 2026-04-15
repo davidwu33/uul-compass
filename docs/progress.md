@@ -1,6 +1,6 @@
 # Compass — Build Progress
 
-Last updated: 2026-04-14
+Last updated: 2026-04-15
 
 ---
 
@@ -140,6 +140,29 @@ All data is fetched server-side via async getters in `src/lib/data/index.ts`, wh
 - Organization → People (`/people`)
 - Feedback + Support both in sidebar footer
 - `/settings` route still alive but removed from nav
+
+---
+
+## Session Log (continued)
+
+### 2026-04-15 — AI token savings + mode design (Session 5)
+
+**Analysis & design work (not yet implemented):**
+
+Reviewed the AI chatbot for token cost reduction. Current cost ~$0.11/query; target ~$0.04/query with caching. Key findings:
+
+- `buildSystemPrompt()` uses `JSON.stringify(data, null, 2)` everywhere — pretty-printing wastes ~20-30% of context tokens
+- Prompt caching not implemented — Anthropic supports `cache_control: { type: "ephemeral" }` on system messages; cache reads cost ~10% of normal input price
+- All 17 tools sent on every request regardless of user role or page context
+- History window is 30 messages (generous — can trim to ~15)
+- `ai_usage` table exists in schema but is never written to
+
+**Planned improvements (deferred — to implement in a future session):**
+
+- [ ] **Compact JSON in system prompt** (`src/lib/ai/system-prompt.ts`) — swap `JSON.stringify(data, null, 2)` → `JSON.stringify(data)`, slim list fields to only what AI needs
+- [ ] **Prompt caching** (`src/app/api/ai/chat/route.ts`) — add `cache_control: { type: "ephemeral" }` to system message param; expected 60-70% cost reduction
+- [ ] **Mode chips + tool filtering** — quick-action buttons above chat input (`[ + Create task ]`, `[ Log risk ]`, `[ Analyze meeting ]`) that pre-select a focused mode with a smaller system prompt and filtered tool list; subsumes role-based tool filtering since each mode defines its own tool subset
+- [ ] **`ai_usage` logging** — after each agentic loop, write `userId`, `inputTokens`, `outputTokens`, `cacheReadTokens` to `ai_usage` table for per-user cost visibility
 
 ---
 
