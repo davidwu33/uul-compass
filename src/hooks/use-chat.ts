@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { PageContext } from "@/lib/ai/system-prompt";
+import type { ChatMode } from "@/lib/ai/tools";
 import { extractProposals } from "@/lib/ai/proposal-parser";
 import { mergeProposal, markProposalRegenerating } from "@/lib/ai/proposal-merge";
 
@@ -29,6 +30,7 @@ export type ChatMessage = {
 export function useChat(pageContext: PageContext) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationMode, setConversationMode] = useState<ChatMode>(null);
   const [isLoading, setIsLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -74,6 +76,7 @@ export function useChat(pageContext: PageContext) {
             message: text,
             pageContext,
             attachments: opts?.attachments,
+            mode: conversationMode,
           }),
           signal: abortRef.current.signal,
         });
@@ -315,6 +318,7 @@ export function useChat(pageContext: PageContext) {
   const resetConversation = useCallback(() => {
     setMessages([]);
     setConversationId(null);
+    setConversationMode(null);
   }, []);
 
   const markDraftApproved = useCallback((draftId: string) => {
@@ -332,6 +336,8 @@ export function useChat(pageContext: PageContext) {
   return {
     messages,
     conversationId,
+    conversationMode,
+    setConversationMode,
     isLoading,
     sendMessage,
     approveDraft,

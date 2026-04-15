@@ -210,3 +210,18 @@ export const ADMIN_ROLES = new Set(["owner", "board", "executive"]);
 export const CONTRIBUTOR_ROLES = new Set([
   "department_head", "manager", "operator", "sales", "finance", "compliance",
 ]);
+
+export type ChatMode = "create_task" | "log_risk" | "analyze_meeting" | "status" | null;
+
+const MODE_TOOLS: Record<NonNullable<ChatMode>, string[]> = {
+  create_task:      ["get_workstreams", "get_users", "create_task"],
+  log_risk:         ["get_risks", "get_workstreams", "get_users", "create_risk"],
+  analyze_meeting:  ["get_tasks", "get_workstreams", "get_users", "get_risks", "create_task", "create_risk", "create_initiative"],
+  status:           ["get_tasks", "get_task_stats", "get_needs_attention", "get_workstreams", "get_risks", "get_gates"],
+};
+
+export function getToolsForMode(mode: ChatMode): Anthropic.Tool[] {
+  if (!mode) return compassTools;
+  const allowed = new Set(MODE_TOOLS[mode]);
+  return compassTools.filter((t) => allowed.has(t.name));
+}

@@ -6,7 +6,7 @@ import { conversations, chatMessages, aiUsage } from "@/db/schema/ai";
 import { users } from "@/db/schema/org";
 import { eq } from "drizzle-orm";
 import { buildSystemPrompt, type PageContext } from "@/lib/ai/system-prompt";
-import { compassTools } from "@/lib/ai/tools";
+import { getToolsForMode, type ChatMode } from "@/lib/ai/tools";
 import { handleToolCall } from "@/lib/ai/tool-handlers";
 import {
   getTasks,
@@ -19,6 +19,7 @@ import {
   getNeedsAttention,
   getTaskMeetings,
   getTaskActivities,
+  getUsers,
 } from "@/lib/data";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -33,11 +34,12 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { conversationId, message, pageContext, attachments }: {
+  const { conversationId, message, pageContext, attachments, mode }: {
     conversationId?: string;
     message: string;
     pageContext: PageContext;
     attachments?: Array<{ url: string; filename: string; contentType: string }>;
+    mode?: ChatMode;
   } = body;
 
   // ── User role ─────────────────────────────────────────────────────────
@@ -50,11 +52,35 @@ export async function POST(req: NextRequest) {
   const userRole = userRecord?.role ?? "viewer";
   const userId = userRecord?.id ?? user.id;
 
-  // ── Page-specific context data ────────────────────────────────────────
+  // ── Context data — gated by mode (if set) or page entity type ───────
   const compassData: Record<string, any> = {};
   const { entityType, entityId } = pageContext;
   try {
-    if (entityType === "task" && entityId) {
+    if (mode === "create_task") {
+      const [workstreams, usersData] = await Promise.all([getWorkstreams(), getUsers()]);
+      compassData.workstreams = workstreams;
+      compassData.users = usersData;
+    } else if (mode === "log_risk") {
+      const [risks, workstreams, usersData] = await Promise.all([getRisks(), getWorkstreams(), getUsers()]);
+      compassData.risks = risks;
+      compassData.workstreams = workstreams;
+      compassData.users = usersData;
+    } else if (mode === "analyze_meeting") {
+      const [tasks, workstreams, usersData] = await Promise.all([getTasks(), getWorkstreams(), getUsers()]);
+      compassData.tasks = tasks;
+      compassData.workstreams = workstreams;
+      compassData.users = usersData;
+    } else if (mode === "status") {
+      const [tasks, workstreams, stats, attention, risks, gates] = await Promise.all([
+        getTasks(), getWorkstreams(), getTaskStats(), getNeedsAttention(), getRisks(), getGates(),
+      ]);
+      compassData.tasks = tasks;
+      compassData.workstreams = workstreams;
+      compassData.taskStats = stats;
+      compassData.needsAttention = attention;
+      compassData.risks = risks;
+      compassData.gates = gates;
+    } else if (entityType === "task" && entityId) {
       const [task, meetings, activities] = await Promise.all([
         getTaskById(entityId),
         getTaskMeetings(entityId),
@@ -65,10 +91,7 @@ export async function POST(req: NextRequest) {
       compassData.taskActivities = activities;
     } else if (entityType === "plan" || entityType === "dashboard") {
       const [tasks, workstreams, stats, attention] = await Promise.all([
-        getTasks(),
-        getWorkstreams(),
-        getTaskStats(),
-        getNeedsAttention(),
+        getTasks(), getWorkstreams(), getTaskStats(), getNeedsAttention(),
       ]);
       compassData.tasks = tasks;
       compassData.workstreams = workstreams;
@@ -161,7 +184,7 @@ export async function POST(req: NextRequest) {
             model: "claude-sonnet-4-6",
             max_tokens: 4096,
             system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-            tools: compassTools,
+            tools: getToolsForMode(mode ?? null),
             messages: currentMessages,
             stream: true,
           });

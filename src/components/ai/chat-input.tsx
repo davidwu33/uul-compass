@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import type { ChatMode } from "@/lib/ai/tools";
 
 export type Attachment = {
   url: string;
@@ -8,12 +9,21 @@ export type Attachment = {
   contentType: string;
 };
 
+const MODE_PLACEHOLDER: Record<NonNullable<ChatMode>, string> = {
+  create_task:     "Describe the task — title, workstream, assignee, due date...",
+  log_risk:        "Describe the risk — title, severity, workstream, mitigation...",
+  analyze_meeting: "Paste the meeting transcript here...",
+  status:          "Ask about status, blockers, progress, upcoming decisions...",
+};
+
 export function ChatInput({
   onSend,
   isLoading,
+  mode,
 }: {
   onSend: (text: string, attachments?: Attachment[]) => void;
   isLoading: boolean;
+  mode: ChatMode;
 }) {
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -57,7 +67,7 @@ export function ChatInput({
   }, [text, files, isLoading, uploading, onSend]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && mode !== "analyze_meeting") {
       e.preventDefault();
       handleSend();
     }
@@ -66,7 +76,7 @@ export function ChatInput({
   const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     target.style.height = "auto";
-    target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+    target.style.height = `${Math.min(target.scrollHeight, mode === "analyze_meeting" ? 240 : 120)}px`;
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,6 +90,8 @@ export function ChatInput({
   };
 
   const canSend = (text.trim() || files.length > 0) && !isLoading && !uploading;
+  const placeholder = mode ? MODE_PLACEHOLDER[mode] : "Ask Compass AI anything...";
+  const minRows = mode === "analyze_meeting" ? 5 : 1;
 
   return (
     <div style={{ borderTop: "1px solid #1e293b" }}>
@@ -87,40 +99,27 @@ export function ChatInput({
       {files.length > 0 && (
         <div className="flex gap-2 px-4 pt-3 overflow-x-auto">
           {files.map((file, i) => (
-            <div
-              key={i}
-              className="relative shrink-0 rounded-lg overflow-hidden bg-slate-800"
-            >
+            <div key={i} className="relative shrink-0 rounded-lg overflow-hidden bg-slate-800">
               {file.type.startsWith("image/") ? (
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  className="h-16 w-16 object-cover rounded-lg"
-                />
+                <img src={URL.createObjectURL(file)} alt={file.name} className="h-16 w-16 object-cover rounded-lg" />
               ) : (
                 <div className="h-16 w-16 flex flex-col items-center justify-center gap-1 px-1">
-                  <span className="material-symbols-outlined text-lg text-slate-400">
-                    description
-                  </span>
-                  <span className="text-[8px] truncate w-full text-center text-slate-400">
-                    {file.name}
-                  </span>
+                  <span className="material-symbols-outlined text-lg text-slate-400">description</span>
+                  <span className="text-[8px] truncate w-full text-center text-slate-400">{file.name}</span>
                 </div>
               )}
               <button
                 onClick={() => removeFile(i)}
                 className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center bg-red-500 text-white"
               >
-                <span className="material-symbols-outlined text-[12px]">
-                  close
-                </span>
+                <span className="material-symbols-outlined text-[12px]">close</span>
               </button>
             </div>
           ))}
         </div>
       )}
 
-      <div className="flex items-end gap-2 px-4 py-3 relative">
+      <div className="flex items-end gap-2 px-4 py-3">
         {/* Attach button */}
         <label
           htmlFor="compass-ai-file-upload"
@@ -146,10 +145,10 @@ export function ChatInput({
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
           onInput={handleInput}
-          placeholder="Ask Compass AI anything..."
-          rows={1}
+          placeholder={placeholder}
+          rows={minRows}
           className="flex-1 resize-none outline-none text-sm py-2.5 px-3 rounded-lg bg-slate-800 text-slate-100 placeholder:text-slate-500"
-          style={{ maxHeight: 120 }}
+          style={{ maxHeight: mode === "analyze_meeting" ? 240 : 120 }}
         />
 
         {/* Send */}
@@ -163,14 +162,16 @@ export function ChatInput({
           }}
         >
           <span className="material-symbols-outlined text-xl">
-            {uploading
-              ? "hourglass_top"
-              : isLoading
-                ? "more_horiz"
-                : "arrow_upward"}
+            {uploading ? "hourglass_top" : isLoading ? "more_horiz" : "arrow_upward"}
           </span>
         </button>
       </div>
+
+      {mode === "analyze_meeting" && (
+        <p className="px-4 pb-2 text-[10px] text-slate-600">
+          Shift+Enter for new line · Enter does not send in this mode
+        </p>
+      )}
     </div>
   );
 }
