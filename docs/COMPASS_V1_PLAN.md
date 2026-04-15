@@ -1,3 +1,5 @@
+> **OUTDATED** — Written 2026-04-13. Sprint tasks largely completed or superseded. Source of truth is now `docs/progress.md`. Kept for historical reference only.
+
 # Compass v1 — Build Plan & David Handoff
 
 **Date:** 2026-04-13

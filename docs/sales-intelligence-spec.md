@@ -1,3 +1,5 @@
+> **OUTDATED** — Written 2026-04-06. Requires Copper CRM, Wrike, Slack, and Gmail integrations — none of which are active. Not on the current roadmap. Kept for future reference when integrations are available.
+
 # Sales Intelligence Module — Spec from Jason Likens
 
 > Date: 2026-04-06

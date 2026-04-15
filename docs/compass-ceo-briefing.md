@@ -1,3 +1,5 @@
+> **OUTDATED** — Written 2026-04-02 (early CEO briefing). Not a task document. Kept for historical reference only.
+
 # UUL Compass — CEO Briefing
 
 **Prepared for:** Jason Likens, CEO  

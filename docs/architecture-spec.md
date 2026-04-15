@@ -1,3 +1,5 @@
+> **OUTDATED** — Written 2026-04-07. Triaged items absorbed into `docs/progress.md` backlog. Phase 2/3 items are speculative and not actively planned. Kept for reference only.
+
 # Compass OS — Architecture & Feature Spec (Reference)
 
 > Source: Professional PMI dashboard best practices review (2026-04-07)

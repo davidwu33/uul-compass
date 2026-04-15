@@ -55,7 +55,7 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
     { labelKey: "nav_home" as const, icon: "dashboard", href: "/" },
     { labelKey: "nav_chat" as const, icon: "assistant", href: "/chat" },
     { labelKey: "nav_decisions" as const, icon: "gavel", href: "/decisions" },
-    { labelKey: "nav_growth" as const, icon: "insights", href: "/value-gains" },
+    { labelKey: "nav_finance" as const, icon: "account_balance", href: "/finance" },
     { labelKey: "nav_pipeline" as const, icon: "timeline", href: "/pipeline" },
     { labelKey: "nav_risks" as const, icon: "warning", href: "/risks" },
     { labelKey: "nav_people" as const, icon: "group", href: "/people" },

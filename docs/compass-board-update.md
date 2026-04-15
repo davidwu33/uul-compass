@@ -1,3 +1,5 @@
+> **OUTDATED** — Written 2026-04-01 (Day 1 board communication). Not a task document. Kept for historical reference only.
+
 各位董事，
 
 UUL Global 的收购今天正式完成。我想向大家汇报一下我们正在搭建的并购后整合系统——**UUL Compass**。

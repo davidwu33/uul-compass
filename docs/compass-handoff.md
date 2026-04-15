@@ -1,3 +1,5 @@
+> **OUTDATED** — Written 2026-04-01 (Day 1 handoff doc). Project setup complete. Source of truth is now `docs/progress.md`. Kept for historical/context reference only.
+
 # UUL Compass — 项目全景文档
 
 **接收人：** David Wu（工程师）
