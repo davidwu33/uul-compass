@@ -1,5 +1,4 @@
-// TODO: Superseded by homepage (/) Project Tasks section.
-// Remove this page once stakeholders confirm no direct links remain.
+// Full task list — linked from homepage "View all tasks" button.
 import {
   getTasks,
   getWorkstreams,

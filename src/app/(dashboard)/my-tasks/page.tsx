@@ -1,5 +1,4 @@
-// TODO: Superseded by homepage (/) My Queue section.
-// Remove this page once stakeholders confirm no direct links remain.
+// Full personal task list — linked from homepage "View all my tasks" button.
 import { getTasks, getWorkstreams, getUsers } from "@/lib/data";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { MyTasksContent } from "./my-tasks-content";
