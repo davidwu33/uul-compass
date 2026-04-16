@@ -280,7 +280,17 @@ export async function getPhases(): Promise<PhaseData[]> {
 
 export async function getGates(): Promise<DecisionGate[]> {
   const rows = await db
-    .select()
+    .select({
+      id: pmiDecisionGates.id,
+      phaseId: pmiDecisionGates.phaseId,
+      name: pmiDecisionGates.name,
+      targetDay: pmiDecisionGates.targetDay,
+      targetDate: pmiDecisionGates.targetDate,
+      status: pmiDecisionGates.status,
+      ownerLabel: pmiDecisionGates.ownerLabel,
+      criteria: pmiDecisionGates.criteria,
+      outcome: pmiDecisionGates.outcome,
+    })
     .from(pmiDecisionGates)
     .orderBy(asc(pmiDecisionGates.targetDay));
 
@@ -288,7 +298,7 @@ export async function getGates(): Promise<DecisionGate[]> {
     id: g.id,
     name: g.name,
     dayNumber: g.targetDay,
-    targetDate: g.targetDate ?? "",
+    targetDate: g.targetDate ? String(g.targetDate) : "",
     phaseId: g.phaseId,
     status: g.status as DecisionGate["status"],
     criteria: ((g.criteria ?? []) as { criterion: string; met: boolean }[]).map(

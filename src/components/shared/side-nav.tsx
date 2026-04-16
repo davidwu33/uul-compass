@@ -62,6 +62,7 @@ export function SideNav({ user, isOpen = false, onClose }: { user: UserProps; is
     { labelKey: "nav_finance" as const, icon: "account_balance", href: "/finance" },
     { labelKey: "nav_pipeline" as const, icon: "timeline", href: "/pipeline" },
     { labelKey: "nav_risks" as const, icon: "warning", href: "/risks" },
+    { labelKey: "nav_knowledge" as const, icon: "auto_stories", href: "/knowledge" },
     { labelKey: "nav_people" as const, icon: "group", href: "/people" },
     ...(isAdmin ? [{ labelKey: "nav_admin" as const, icon: "admin_panel_settings", href: "/admin" }] : []),
   ];
