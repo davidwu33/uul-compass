@@ -96,7 +96,7 @@ function AttentionRow({ item, t }: { item: AttentionItem; t: (k: Parameters<Retu
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-4 py-3 hover:bg-[#171f32] active:opacity-75 transition-colors border-b border-slate-800/40 last:border-b-0 group"
+      className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 hover:bg-[#171f32] active:opacity-75 transition-colors border-b border-slate-800/40 last:border-b-0 group"
     >
       {item.type === "gate" ? (
         <span className="text-[10px] font-semibold uppercase tracking-wider text-[#dfc299] shrink-0 w-14 md:w-16">
@@ -344,9 +344,9 @@ export function DashboardContent({
         return (
           <section>
             {/* Header with RAG summary badges */}
-            <div className="flex items-center gap-3 mb-5 flex-wrap">
+            <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-5 flex-wrap">
               <span className="material-symbols-outlined text-amber-400 text-lg">priority_high</span>
-              <h2 className="font-serif text-2xl text-white">{t("dash_needsAttention")}</h2>
+              <h2 className="font-serif text-xl md:text-2xl text-white">{t("dash_needsAttention")}</h2>
               {urgentCount > 0 && (
                 <span className="rounded-full bg-red-400/10 px-2.5 py-0.5 text-[10px] font-semibold text-red-400">
                   {urgentCount} {t("dash_attn_urgent")}

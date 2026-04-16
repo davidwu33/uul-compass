@@ -91,7 +91,7 @@ export function groupTasks(tasks: TaskData[]) {
 
 function TaskCode({ code }: { code: string }) {
   return (
-    <code className="font-mono text-xs text-slate-500 bg-[#2d3448] px-2 py-1 rounded">
+    <code className="font-mono text-[10px] md:text-xs text-slate-500 bg-[#2d3448] px-1.5 md:px-2 py-0.5 md:py-1 rounded shrink-0">
       {code}
     </code>
   );
@@ -153,13 +153,13 @@ export function OverdueCard({ task }: { task: TaskData }) {
   return (
     <Link
       href={`/tasks/${task.id}`}
-      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 hover:bg-[#171f32] active:scale-[0.98] active:opacity-75 transition-all"
+      className="relative rounded-lg bg-[#131b2d] p-3 md:p-4 pl-5 md:pl-6 flex items-center gap-3 md:gap-4 hover:bg-[#171f32] active:scale-[0.98] active:opacity-75 transition-all"
     >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-red-500" />
       <TaskCode code={task.taskCode} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-lg text-blue-100 line-clamp-2">{task.title}</p>
+          <p className="text-sm md:text-lg text-blue-100 line-clamp-2">{task.title}</p>
 
         </div>
         <div className="flex items-center gap-3 mt-1">
@@ -181,13 +181,13 @@ export function WeekCard({ task }: { task: TaskData }) {
   return (
     <Link
       href={`/tasks/${task.id}`}
-      className="relative rounded-lg bg-[#131b2d] p-4 pl-6 flex items-center gap-4 hover:bg-[#171f32] active:scale-[0.98] active:opacity-75 transition-all"
+      className="relative rounded-lg bg-[#131b2d] p-3 md:p-4 pl-5 md:pl-6 flex items-center gap-3 md:gap-4 hover:bg-[#171f32] active:scale-[0.98] active:opacity-75 transition-all"
     >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-blue-500" />
       <TaskCode code={task.taskCode} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-lg text-blue-100 line-clamp-2">{task.title}</p>
+          <p className="text-sm md:text-lg text-blue-100 line-clamp-2">{task.title}</p>
 
           <PriorityBadge priority={task.priority} />
         </div>
@@ -210,7 +210,7 @@ function LaterCard({ task }: { task: TaskData }) {
   return (
     <Link
       href={`/tasks/${task.id}`}
-      className="relative rounded-lg bg-[#131b2d]/60 p-4 pl-6 flex items-center gap-4 hover:bg-[#171f32]/60 active:scale-[0.98] active:opacity-75 transition-all"
+      className="relative rounded-lg bg-[#131b2d]/60 p-3 md:p-4 pl-5 md:pl-6 flex items-center gap-3 md:gap-4 hover:bg-[#171f32]/60 active:scale-[0.98] active:opacity-75 transition-all"
     >
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-slate-600" />
       <TaskCode code={task.taskCode} />
@@ -235,7 +235,7 @@ function LaterCard({ task }: { task: TaskData }) {
 
 function CompletedCard({ task }: { task: TaskData }) {
   return (
-    <div className="relative rounded-lg bg-[#131b2d]/40 p-4 pl-6 flex items-center gap-4">
+    <div className="relative rounded-lg bg-[#131b2d]/40 p-3 md:p-4 pl-5 md:pl-6 flex items-center gap-3 md:gap-4">
       <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-emerald-600/50" />
       <TaskCode code={task.taskCode} />
       <div className="flex-1 min-w-0">
